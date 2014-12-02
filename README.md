@@ -1,4 +1,4 @@
-## workerman reactor 
+## workerman react 
 create test.php
 ```php
 require_once 'reactor.php';
