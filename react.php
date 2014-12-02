@@ -338,12 +338,6 @@ class Select implements BaseEvent
     public $writeFds = array();
     
     /**
-     * 搞个fd，避免 $readFds $writeFds 都为空时select 失败
-     * @var resource
-     */
-    public $channel = null;
-    
-    /**
      *  读超时 毫秒
      * @var integer
      */
@@ -355,20 +349,6 @@ class Select implements BaseEvent
      */
     protected $writeTimeout = 1000;
     
-    /**
-     * 构造函数 创建一个管道，避免select空fd
-     * @return void
-     */
-    public function __construct()
-    {
-        $this->channel = stream_socket_pair(STREAM_PF_INET, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
-        if($this->channel)
-        {
-            stream_set_blocking($this->channel[0], 0);
-            $this->readFds[0] = $this->channel[0];
-        }
-    }
-   
     /**
      * 添加事件
      * @see \Man\Core\Events\BaseEvent::add()
