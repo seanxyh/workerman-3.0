@@ -113,7 +113,7 @@ class Client extends Connection
         return true;
     }
 
-    protected triggerError($errno, $errmsg)
+    protected function triggerError($errno, $errmsg)
     {
         if($this->onError)
         {
@@ -464,11 +464,11 @@ class Select implements BaseEvent
                 {
                 }
                 // 触发信号处理函数
-                pcntl_signal_dispatch();
+                function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
                 continue;
             }
             // 触发信号处理函数
-            pcntl_signal_dispatch();
+            function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
             
             // 检查所有可读描述符
             foreach($read as $fd)
@@ -494,11 +494,12 @@ class Select implements BaseEvent
     
 }
 
-
+/*
 $worker = new Worker("tcp://0.0.0.0:1234");
 $worker->onConnect = function($connection)
 {
-    var_dump($connection);
+    echo "connected\n"; 
+    //var_dump($connection);
 };
 $worker->onMessage = function($connection, $data)
 {
@@ -506,6 +507,8 @@ $worker->onMessage = function($connection, $data)
 };
 $worker->onClose = function($connection)
 {
-    var_dump($connection);
+    echo "closed\n";
+    //var_dump($connection);
 };
 $worker->run();
+*/
