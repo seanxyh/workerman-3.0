@@ -9,19 +9,20 @@ $worker = new Worker("tcp://0.0.0.0:1234");
 // when client connect 1234 port
 $worker->onConnect = function($connection)
 {
-    echo "connected\n";
+    echo "client connected\n";
 };
 
 // when client send data to 1234 port
 $worker->onMessage = function($connection, $data)
 {
+    // send data to client
     $connection->send($data);
 };
 
 // when client close connection
 $worker->onClose = function($connection)
 {
-    echo "closed\n";
+    echo "client closed\n";
 };
 
 // run worker
