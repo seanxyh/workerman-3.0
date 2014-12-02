@@ -361,7 +361,7 @@ class Select implements BaseEvent
      */
     public function __construct()
     {
-        $this->channel = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+        $this->channel = stream_socket_pair(STREAM_PF_INET, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
         if($this->channel)
         {
             stream_set_blocking($this->channel[0], 0);
@@ -471,22 +471,28 @@ class Select implements BaseEvent
             function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
             
             // 检查所有可读描述符
-            foreach($read as $fd)
+            if($read)
             {
-                $fd_key = (int) $fd;
-                if(isset($this->allEvents[$fd_key][self::EV_READ]))
+                foreach($read as $fd)
                 {
-                    call_user_func_array($this->allEvents[$fd_key][self::EV_READ]['func'], array($this->allEvents[$fd_key][self::EV_READ]['fd'], self::EV_READ,  $this->allEvents[$fd_key][self::EV_READ]['args']));
+                    $fd_key = (int) $fd;
+                    if(isset($this->allEvents[$fd_key][self::EV_READ]))
+                    {
+                        call_user_func_array($this->allEvents[$fd_key][self::EV_READ]['func'], array($this->allEvents[$fd_key][self::EV_READ]['fd'], self::EV_READ,  $this->allEvents[$fd_key][self::EV_READ]['args']));
+                    }
                 }
             }
             
-            // 检查可写描述符，没用到，暂不实现
-            foreach($write as $fd)
+            // 检查可写描述符
+            if($write)
             {
-                $fd_key = (int) $fd;
-                if(isset($this->allEvents[$fd_key][self::EV_WRITE]))
+                foreach($write as $fd)
                 {
-                    call_user_func_array($this->allEvents[$fd_key][self::EV_WRITE]['func'], array($this->allEvents[$fd_key][self::EV_WRITE]['fd'], self::EV_WRITE,  $this->allEvents[$fd_key][self::EV_WRITE]['args']));
+                    $fd_key = (int) $fd;
+                    if(isset($this->allEvents[$fd_key][self::EV_WRITE]))
+                    {
+                        call_user_func_array($this->allEvents[$fd_key][self::EV_WRITE]['func'], array($this->allEvents[$fd_key][self::EV_WRITE]['fd'], self::EV_WRITE,  $this->allEvents[$fd_key][self::EV_WRITE]['args']));
+                    }
                 }
             }
         }
