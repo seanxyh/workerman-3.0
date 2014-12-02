@@ -1,5 +1,8 @@
 ## workerman reactor 
+create test.php
 ```php
+require_once 'reactor.php';
+
 $worker = new Worker("tcp://0.0.0.0:1234");
 $worker->onConnect = function($connection)
 {
@@ -15,3 +18,5 @@ $worker->onClose = function($connection)
 };
 $worker->run();
 ```
+
+run php test.php
