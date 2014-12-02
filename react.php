@@ -338,18 +338,6 @@ class Select implements BaseEvent
     public $writeFds = array();
     
     /**
-     *  读超时 毫秒
-     * @var integer
-     */
-    protected $readTimeout = 1000;
-    
-    /**
-     * 写超时 毫秒
-     * @var integer
-     */
-    protected $writeTimeout = 1000;
-    
-    /**
      * 添加事件
      * @see \Man\Core\Events\BaseEvent::add()
      */
@@ -433,7 +421,7 @@ class Select implements BaseEvent
             $read = $this->readFds;
             $write = $this->writeFds;
             // stream_select false：出错 0：超时
-            if(!($ret = @stream_select($read, $write, $e, 1)))
+            if(!($ret = @stream_select($read, $write, $e, PHP_INT_MAX)))
             {
                 // 超时
                 if($ret === 0)
