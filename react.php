@@ -1,4 +1,6 @@
 <?php
+namespace W;
+//gc_disable();
 ini_set('display_errors', 'on');
 
 define('SYNC', 1);
@@ -10,6 +12,106 @@ define('ERROR_SEND_FAIL', 30001);
 
 class Worker extends Connection
 {
+    public $logfile = './std.log';
+    public $count = 1;
+
+    //[$address=>[pid,pid..],..]
+    protected static $pidMap = array();
+
+    protected static $workers = array();
+
+    public static function start($daemonize = false)
+    {
+        $daemonize && self::daemonize();
+        self::createWorkers();
+        self::monitorWorkers();
+    }
+
+    protected static function daemonize()
+    {
+        umask(0);
+        $pid = pcntl_fork();
+        if(-1 == $pid)
+        {
+            throw new \Exception("Daemonize fail ,can not fork");
+        }
+        elseif($pid > 0)
+        {
+            exit(0);
+        }
+        if(-1 == posix_setsid())
+        {
+            throw new \Exception("Daemonize fail ,setsid fail");
+        }
+        
+        $pid2 = pcntl_fork();
+        if(-1 == $pid2)
+        {
+            throw new \Exception("Daemonize fail ,can not fork");
+        }
+        elseif(0 !== $pid2)
+        {
+            exit(0);
+        }
+    }
+
+
+    protected static function resetStd()
+    {
+        
+    }
+
+
+    protected static function createWorkers()
+    {
+        foreach(self::$workers as $address=>$worker)
+        {
+            while(count(self::$pidMap[$address]) < $worker->count)
+            {
+                self::forkOneWorker($worker);
+            }
+        }
+    }
+
+    protected static function forkOneWorker($worker)
+    {
+        $pid = pcntl_fork();
+        if($pid > 0)
+        {
+            self::$pidMap[$worker->address][$pid] = $pid;
+        }
+        elseif(0 === $pid)
+        {
+            self::$pidMap = self::$workers = array();
+            $worker->run();
+            exit(250);
+        }
+        else
+        {
+            throw new \Exception("forkOneWorker fail");
+        }
+    }
+
+    protected static function monitorWorkers()
+    {
+        while(1)
+        {
+            $pid = pcntl_wait($status, WUNTRACED);
+            if($pid > 0)
+            {
+                foreach(self::$pidMap as $address => $pid_array)
+                {
+                    if(isset($pid_array[$pid]))
+                    {
+                        unset(self::$pidMap[$address][$pid]);
+                        break;
+                    }
+                }
+                self::createWorkers();
+            }
+        }
+    }
+    
     public function __construct($address)
     {
         $this->socket = stream_socket_server($address, $errno, $errmsg);
@@ -17,13 +119,16 @@ class Worker extends Connection
         {
             throw new \Exception($errmsg);
         }
+        self::$workers[$address] = $this;
+        self::$pidMap[$address] = array();
+        $this->address = $address;
     }
     
     public function run()
     {
         if(!self::$globalEvent)
         {
-            self::$globalEvent = new \Select();
+            self::$globalEvent = new Select();
         }
         self::$globalEvent->add($this->socket, BaseEvent::EV_READ, array($this, 'accept'));
         self::$globalEvent->loop();
@@ -432,11 +537,11 @@ class Select implements BaseEvent
                 {
                 }
                 // 触发信号处理函数
-                function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
+                //function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
                 continue;
             }
             // 触发信号处理函数
-            function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
+            //function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
             
             // 检查所有可读描述符
             if($read)
@@ -468,21 +573,33 @@ class Select implements BaseEvent
     
 }
 
-/*
+
 $worker = new Worker("tcp://0.0.0.0:1234");
-$worker->onConnect = function($connection)
+$worker->count = 4;
+/*$worker->onConnect = function($connection)
 {
-    echo "connected\n"; 
+    //echo "connected\n"; 
     //var_dump($connection);
 };
+*/
 $worker->onMessage = function($connection, $data)
 {
-    $connection->send($data);
+    $connection->send("HTTP/1.0 200 OK\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 5\r\n\r\nhello");
+    //$connection->send("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: 5\r\n\r\nhello");
+    //$connection->close();
 };
-$worker->onClose = function($connection)
+/*$worker->onClose = function($connection)
 {
-    echo "closed\n";
+    //echo "closed\n";
     //var_dump($connection);
 };
-$worker->run();
 */
+$worker2 = new Worker("tcp://0.0.0.0:4567");
+$worker2->onMessage = function($connection, $data)
+{
+    $connection->send("**".$data);
+};
+//$worker->run();
+Worker::start();
+
+
