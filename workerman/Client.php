@@ -1,5 +1,5 @@
 <?php
-namespace workerman;
+namespace Workerman;
 
 define('WORKERMAN_CLIENT_SYNC', 1);
 

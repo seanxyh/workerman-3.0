@@ -1,8 +1,8 @@
 <?php
-namespace workerman;
-use Events\Libevent;
-use Events\Select;
-use Events\BaseEvent;
+namespace Workerman;
+use Workerman\Events\Libevent;
+use Workerman\Events\Select;
+use Workerman\Events\BaseEvent;
 
 class Connection
 {

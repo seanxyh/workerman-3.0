@@ -1,5 +1,5 @@
 <?php
-namespace workerman;
+namespace Workerman;
 
 ini_set('display_errors', 'on');
 

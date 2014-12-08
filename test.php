@@ -1,6 +1,6 @@
 <?php
 require_once './workerman/Worker.php';
-use workerman\Worker;
+use Workerman\Worker;
 
 $worker = new Worker("tcp://0.0.0.0:1234");
 $worker->count = 4;

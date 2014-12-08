@@ -1,5 +1,5 @@
 <?php
-namespace workerman\Events;
+namespace Workerman\Events;
 
 interface BaseEvent
 {

@@ -1,5 +1,5 @@
 <?php 
-namespace workerman\Events;
+namespace Workerman\Events;
 /**
  * 
  * libevent事件轮询库的封装
