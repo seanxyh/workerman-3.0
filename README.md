@@ -1,10 +1,10 @@
 ## workerman react 
 create test.php
 ```php
-require_once 'react.php';
+require_once './Workerman/Worker.php';
 
 // create socket and listen 1234 port
-$worker = new Worker("tcp://0.0.0.0:1234");
+$worker = new Workerman\Worker("tcp://0.0.0.0:1234");
 
 // when client connect 1234 port
 $worker->onConnect = function($connection)
