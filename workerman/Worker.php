@@ -3,7 +3,7 @@ namespace workerman;
 
 ini_set('display_errors', 'on');
 
-require_once __DIR__ . '/Connection';
+require_once __DIR__ . '/Connection.php';
 require_once __DIR__ . '/Client.php';
 require_once __DIR__ . '/Events/BaseEvent.php';
 require_once __DIR__ . '/Events/Select.php';
