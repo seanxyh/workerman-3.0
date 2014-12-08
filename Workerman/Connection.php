@@ -86,7 +86,7 @@ class Connection
     {
         if(!$this->remoteIp)
         {
-            if($address = stream_socket_get_name($this->socket))
+            if($address = stream_socket_get_name($this->socket, false))
             {
                 list($this->remoteIp, $this->remotePort) = explode(':', $address, 2);
             }
@@ -98,7 +98,7 @@ class Connection
     {
         if(!$this->remotePort)
         {
-            if($address = stream_socket_get_name($this->socket))
+            if($address = stream_socket_get_name($this->socket, false))
             {
                 list($this->remoteIp, $this->remotePort) = explode(':', $address, 2);
             }
