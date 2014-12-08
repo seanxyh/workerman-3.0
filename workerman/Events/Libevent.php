@@ -88,7 +88,6 @@ class Libevent implements BaseEvent
         {
             return false;
         }
-        
         return true;
     }
     
