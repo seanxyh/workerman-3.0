@@ -1,5 +1,5 @@
 <?php
-require_once './workerman/Worker.php';
+require_once './Workerman/Worker.php';
 use Workerman\Worker;
 
 $worker = new Worker("tcp://0.0.0.0:1234");

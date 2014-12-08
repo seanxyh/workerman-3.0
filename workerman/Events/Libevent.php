@@ -37,7 +37,7 @@ class Libevent implements BaseEvent
    
     /**
      * 添加事件
-     * @see \Man\Core\Events\BaseEvent::add()
+     * @see BaseEvent::add()
      */
     public function add($fd, $flag, $func, $args = null)
     {
@@ -94,7 +94,7 @@ class Libevent implements BaseEvent
     
     /**
      * 删除fd的某个事件
-     * @see \Man\Core\Events\BaseEvent::del()
+     * @see Events\BaseEvent::del()
      */
     public function del($fd ,$flag)
     {
@@ -102,8 +102,8 @@ class Libevent implements BaseEvent
         switch($flag)
         {
             // 读事件
-            case \Man\Core\Events\BaseEvent::EV_READ:
-            case \Man\Core\Events\BaseEvent::EV_WRITE:
+            case BaseEvent::EV_READ:
+            case BaseEvent::EV_WRITE:
                 if(isset($this->allEvents[$fd_key][$flag]))
                 {
                     event_del($this->allEvents[$fd_key][$flag]);
@@ -113,7 +113,7 @@ class Libevent implements BaseEvent
                 {
                     unset($this->allEvents[$fd_key]);
                 }
-            case  \Man\Core\Events\BaseEvent::EV_SIGNAL:
+            case  BaseEvent::EV_SIGNAL:
                 if(isset($this->eventSignal[$fd_key]))
                 {
                     event_del($this->eventSignal[$fd_key]);
@@ -125,7 +125,7 @@ class Libevent implements BaseEvent
 
     /**
      * 轮训主循环
-     * @see \Man\Core\Events\BaseEvent::loop()
+     * @see BaseEvent::loop()
      */
     public function loop()
     {
