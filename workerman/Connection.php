@@ -29,6 +29,10 @@ class Connection
     protected $sendBuffer = '';
 
     protected $status = self::STATUS_NULL;
+    
+    protected $remoteIp = '';
+    
+    protected $remotePort = 0;
 
     public function __construct($socket)
     {
@@ -76,6 +80,30 @@ class Connection
             $this->event = self::$globalEvent;
         }
         $this->event->add($this->socket, BaseEvent::EV_READ, array($this, 'baseRead'));
+    }
+    
+    public function getRemoteIp()
+    {
+        if(!$this->remoteIp)
+        {
+            if($address = stream_socket_get_name($this->socket))
+            {
+                list($this->remoteIp, $this->remotePort) = explode(':', $address, 2);
+            }
+        }
+        return $this->remoteIp;
+    }
+    
+    public function getRemotePort()
+    {
+        if(!$this->remotePort)
+        {
+            if($address = stream_socket_get_name($this->socket))
+            {
+                list($this->remoteIp, $this->remotePort) = explode(':', $address, 2);
+            }
+        }
+        return $this->remotePort;
     }
 
     public function baseRead($socket)

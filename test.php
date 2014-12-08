@@ -2,32 +2,32 @@
 require_once './Workerman/Worker.php';
 use Workerman\Worker;
 
-$worker = new Worker("tcp://0.0.0.0:1234");
-$worker->count = 4;
-/*$worker->onConnect = function($connection)
+require_once './Workerman/Worker.php';
+
+// create socket and listen 1234 port
+$worker = new Workerman\Worker("tcp://0.0.0.0:1234");
+
+// when client connect 1234 port
+$worker->onConnect = function($connection)
 {
-    //echo "connected\n"; 
-    //var_dump($connection);
+    echo "client " . $connection->getRemoteIp() . " connected\n";
 };
-*/
+
+// when client send data to 1234 port
 $worker->onMessage = function($connection, $data)
 {
-    $connection->send("HTTP/1.0 200 OK\r\nConnection: Keep-Alive\r\nContent-Type: text/html\r\nContent-Length: 5\r\n\r\nhello");
-    //$connection->send("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: 5\r\n\r\nhello");
-    //$connection->close();
+    // send data to client
+    $connection->send($data);
 };
-/*$worker->onClose = function($connection)
+
+// when client close connection
+$worker->onClose = function($connection)
 {
-    //echo "closed\n";
-    //var_dump($connection);
+    echo "client closed\n";
 };
-*/
-$worker2 = new Worker("tcp://0.0.0.0:4567");
-$worker2->onMessage = function($connection, $data)
-{
-    $connection->send("**".$data);
-};
-//$worker->run();
+
+// run worker
+$worker->run();
 Worker::start();
 
 
