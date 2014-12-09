@@ -30,7 +30,7 @@ class Worker extends Connection
     
     protected static $_pidMap = array();
 
-    public static function start()
+    public static function runAll()
     {
         if(self::$daemonize)
         {
