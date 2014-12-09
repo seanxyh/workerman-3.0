@@ -7,31 +7,31 @@ class Select implements BaseEvent
      * 记录所有事件处理函数及参数
      * @var array
      */
-    public $allEvents = array();
+    public $_allEvents = array();
     
     /**
      * 记录所有信号处理函数及参数
      * @var array
      */
-    public $signalEvents = array();
+    public $_signalEvents = array();
     
     /**
      * 监听的读描述符
      * @var array
      */
-    public $readFds = array();
+    protected $_readFds = array();
     
     /**
      * 监听的写描述符
      * @var array
      */
-    public $writeFds = array();
+    protected $_writeFds = array();
     
     /**
      * 添加事件
-     * @see \Man\Core\Events\BaseEvent::add()
+     * @see Events\BaseEvent::add()
      */
-    public function add($fd, $flag, $func, $args = null)
+    public function add($fd, $flag, $func)
     {
         // key
         $fd_key = (int)$fd;
@@ -39,17 +39,17 @@ class Select implements BaseEvent
         {
             // 可读事件
             case self::EV_READ:
-                $this->allEvents[$fd_key][$flag] = array('args'=>$args, 'func'=>$func, 'fd'=>$fd);
-                $this->readFds[$fd_key] = $fd;
+                $this->_allEvents[$fd_key][$flag] = array($func, $fd);
+                $this->_readFds[$fd_key] = $fd;
                 break;
             // 写事件 目前没用到，未实现
             case self::EV_WRITE:
-                $this->allEvents[$fd_key][$flag] = array('args'=>$args, 'func'=>$func, 'fd'=>$fd);
-                $this->writeFds[$fd_key] = $fd;
+                $this->_allEvents[$fd_key][$flag] = array($func, $fd);
+                $this->_writeFds[$fd_key] = $fd;
                 break;
             // 信号处理事件
             case self::EV_SIGNAL:
-                $this->signalEvents[$fd_key][$flag] = array('args'=>$args, 'func'=>$func, 'fd'=>$fd);
+                $this->_signalEvents[$fd_key][$flag] = array($func, $fd);
                 function_exists('pcntl_signal') && pcntl_signal($fd, array($this, 'signalHandler'));
                 break;
         }
@@ -63,12 +63,12 @@ class Select implements BaseEvent
      */
     public function signalHandler($signal)
     {
-        call_user_func_array($this->signalEvents[$signal][self::EV_SIGNAL]['func'], array($signal, self::EV_SIGNAL, $signal));
+        call_user_func_array($this->_signalEvents[$signal][self::EV_SIGNAL][0], array($signal, self::EV_SIGNAL, $signal));
     }
     
     /**
      * 删除某个fd的某个事件
-     * @see \Man\Core\Events\BaseEvent::del()
+     * @see Events\BaseEvent::del()
      */
     public function del($fd ,$flag)
     {
@@ -77,23 +77,23 @@ class Select implements BaseEvent
         {
             // 可读事件
             case self::EV_READ:
-                unset($this->allEvents[$fd_key][$flag], $this->readFds[$fd_key]);
-                if(empty($this->allEvents[$fd_key]))
+                unset($this->_allEvents[$fd_key][$flag], $this->_readFds[$fd_key]);
+                if(empty($this->_allEvents[$fd_key]))
                 {
-                    unset($this->allEvents[$fd_key]);
+                    unset($this->_allEvents[$fd_key]);
                 }
                 break;
             // 可写事件
             case self::EV_WRITE:
-                unset($this->allEvents[$fd_key][$flag], $this->writeFds[$fd_key]);
-                if(empty($this->allEvents[$fd_key]))
+                unset($this->_allEvents[$fd_key][$flag], $this->_writeFds[$fd_key]);
+                if(empty($this->_allEvents[$fd_key]))
                 {
-                    unset($this->allEvents[$fd_key]);
+                    unset($this->_allEvents[$fd_key]);
                 }
                 break;
             // 信号
             case self::EV_SIGNAL:
-                unset($this->signalEvents[$fd_key]);
+                unset($this->_signalEvents[$fd_key]);
                 function_exists('pcntl_signal') && pcntl_signal($fd, SIG_IGN);
                 break;
         }
@@ -111,8 +111,8 @@ class Select implements BaseEvent
             // calls signal handlers for pending signals
             function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
             // 
-            $read = $this->readFds;
-            $write = $this->writeFds;
+            $read = $this->_readFds;
+            $write = $this->_writeFds;
             // waits for $read and $write to change status
             if(!($ret = @stream_select($read, $write, $e, PHP_INT_MAX)))
             {
@@ -127,9 +127,9 @@ class Select implements BaseEvent
                 foreach($read as $fd)
                 {
                     $fd_key = (int) $fd;
-                    if(isset($this->allEvents[$fd_key][self::EV_READ]))
+                    if(isset($this->_allEvents[$fd_key][self::EV_READ]))
                     {
-                        call_user_func_array($this->allEvents[$fd_key][self::EV_READ]['func'], array($this->allEvents[$fd_key][self::EV_READ]['fd'], self::EV_READ,  $this->allEvents[$fd_key][self::EV_READ]['args']));
+                        call_user_func_array($this->_allEvents[$fd_key][self::EV_READ][0], array($this->_allEvents[$fd_key][self::EV_READ][1]));
                     }
                 }
             }
@@ -140,9 +140,9 @@ class Select implements BaseEvent
                 foreach($write as $fd)
                 {
                     $fd_key = (int) $fd;
-                    if(isset($this->allEvents[$fd_key][self::EV_WRITE]))
+                    if(isset($this->_allEvents[$fd_key][self::EV_WRITE]))
                     {
-                        call_user_func_array($this->allEvents[$fd_key][self::EV_WRITE]['func'], array($this->allEvents[$fd_key][self::EV_WRITE]['fd'], self::EV_WRITE,  $this->allEvents[$fd_key][self::EV_WRITE]['args']));
+                        call_user_func_array($this->_allEvents[$fd_key][self::EV_WRITE][0], array($this->_allEvents[$fd_key][self::EV_WRITE][1]));
                     }
                 }
             }

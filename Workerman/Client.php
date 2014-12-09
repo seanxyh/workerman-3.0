@@ -10,15 +10,15 @@ define('ERROR_SEND_FAIL', 30001);
 class Client extends Connection
 {
     public $onError = null;
-    protected $flag = SYNC;
+    protected $flag = WORKERMAN_CLIENT_SYNC;
     protected $address = '';
     protected $timeout = 1;
 
     public function __constuct($address, $flag = SYNC, $timeout = 1)
     {
-        $this->flag = $flag;
+        $this->_flag = $flag;
         $this->timeout = $timeout;
-        if($this->flag === SYNC)
+        if($this->_flag === SYNC)
         {
             $this->socket = stream_socket_client($address, $errno, $errmsg, $timeout);
             if(!$this->socket)
@@ -37,7 +37,7 @@ class Client extends Connection
 
     public function send($buffer)
     {
-        if($this->flag === ASYNC)
+        if($this->_flag === ASYNC)
         {
             return parent::send($buffer);
         }

@@ -18,7 +18,7 @@ class Connection
 
     public $event = null;
 
-    protected $socket = null;
+    public $socket = null;
     
     public $onConnect = null;
 
@@ -26,13 +26,13 @@ class Connection
 
     public $onClose = null;
 
-    protected $sendBuffer = '';
+    protected $_sendBuffer = '';
 
-    protected $status = self::STATUS_NULL;
+    protected $_status = self::STATUS_NULL;
     
-    protected $remoteIp = '';
+    protected $_remoteIp = '';
     
-    protected $remotePort = 0;
+    protected $_remotePort = 0;
 
     public function __construct($socket)
     {
@@ -41,7 +41,7 @@ class Connection
     
     public function send($send_buffer)
     {
-        if($this->sendBuffer === '')
+        if($this->_sendBuffer === '')
         {
             $len = fwrite($this->socket, $send_buffer);
             if($len === strlen($send_buffer))
@@ -50,7 +50,7 @@ class Connection
             }
             elseif($len > 0)
             {
-                $this->sendBuffer = substr($send_buffer, $len);
+                $this->_sendBuffer = substr($send_buffer, $len);
             }
             else
             {
@@ -59,12 +59,12 @@ class Connection
                     $this->shutdown();
                     return;
                 }
-                $this->sendBuffer = $send_buffer;
+                $this->_sendBuffer = $send_buffer;
             }
         }
-        if($this->sendBuffer !== '')
+        if($this->_sendBuffer !== '')
         {
-            $this->sendBuffer .= $send_buffer;
+            $this->_sendBuffer .= $send_buffer;
             $this->event->add($this->socket, BaseEvent::EV_WRITE, array($this, 'baseWrite'));
         }
     }
@@ -84,26 +84,26 @@ class Connection
     
     public function getRemoteIp()
     {
-        if(!$this->remoteIp)
+        if(!$this->_remoteIp)
         {
             if($address = stream_socket_get_name($this->socket, false))
             {
-                list($this->remoteIp, $this->remotePort) = explode(':', $address, 2);
+                list($this->_remoteIp, $this->_remotePort) = explode(':', $address, 2);
             }
         }
-        return $this->remoteIp;
+        return $this->_remoteIp;
     }
     
     public function getRemotePort()
     {
-        if(!$this->remotePort)
+        if(!$this->_remotePort)
         {
             if($address = stream_socket_get_name($this->socket, false))
             {
-                list($this->remoteIp, $this->remotePort) = explode(':', $address, 2);
+                list($this->_remoteIp, $this->_remotePort) = explode(':', $address, 2);
             }
         }
-        return $this->remotePort;
+        return $this->_remotePort;
     }
 
     public function baseRead($socket)
@@ -128,12 +128,12 @@ class Connection
 
     public function baseWrite()
     {
-        $len = fwrite($this->socket, $this->sendBuffer);
-        if($len == strlen($this->sendBuffer))
+        $len = fwrite($this->socket, $this->_sendBuffer);
+        if($len == strlen($this->_sendBuffer))
         {
             $this->event->del($this->socket, BaseEvent::EV_WRITE);
-            $this->sendBuffer = '';
-            if($this->status == self::STATUS_CLOSING)
+            $this->_sendBuffer = '';
+            if($this->_status == self::STATUS_CLOSING)
             {
                 $this->shutdown();
             }
@@ -141,7 +141,7 @@ class Connection
         }
         if($len > 0)
         {
-           $this->sendBuffer = substr($this->sendBuffer, $len);
+           $this->_sendBuffer = substr($this->_sendBuffer, $len);
         }
         else
         {
@@ -154,8 +154,8 @@ class Connection
 
     public function close()
     {
-        $this->status = self::STATUS_CLOSING;
-        if($this->sendBuffer === '')
+        $this->_status = self::STATUS_CLOSING;
+        if($this->_sendBuffer === '')
         {
            $this->shutdown();
         }

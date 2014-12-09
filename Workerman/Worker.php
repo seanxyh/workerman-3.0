@@ -12,46 +12,69 @@ require_once __DIR__ . '/Events/Libevent.php';
 use workerman\Events\Libevent;
 use workerman\Events\Select;
 use workerman\Events\BaseEvent;
+use \Exception;
 
 class Worker extends Connection
 {
     public $count = 1;
+    
+    public $connections = array();
+    
+    public static $daemonize = false;
+    
+    public static $stdoutFile = '/dev/null';
+    
+    public static $pidFile = '/tmp/workerman.pid';
 
-    protected static $pidMap = array();
+    protected static $_workers = array();
+    
+    protected static $_pidMap = array();
 
-    protected static $workers = array();
-
-    public static function start($daemonize = false)
+    public static function start()
     {
-        $daemonize && self::daemonize();
+        if(self::$daemonize)
+        {
+            self::daemonize();
+            self::resetStd();
+            self::savePid();
+        }
         self::createWorkers();
         self::monitorWorkers();
     }
 
     protected static function daemonize()
     {
+         // 设置umask
         umask(0);
+        // fork一次
         $pid = pcntl_fork();
         if(-1 == $pid)
         {
-            throw new \Exception("Daemonize fail ,can not fork");
+            // 出错退出
+            throw new Exception('fork fail');
         }
         elseif($pid > 0)
         {
+            // 父进程，退出
             exit(0);
         }
+        // 成为session leader
         if(-1 == posix_setsid())
         {
-            throw new \Exception("Daemonize fail ,setsid fail");
+            // 出错退出
+            throw new Exception("setsid fail");
         }
-        
-        $pid2 = pcntl_fork();
-        if(-1 == $pid2)
+    
+        // 再fork一次，防止在符合SVR4标准的系统下进程再次获得终端
+        $pid = pcntl_fork();
+        if(-1 == $pid)
         {
-            throw new \Exception("Daemonize fail ,can not fork");
+            // 出错退出
+            throw new Exception("fork fail");
         }
-        elseif(0 !== $pid2)
+        elseif(0 !== $pid)
         {
+            // 禁止进程重新打开控制终端
             exit(0);
         }
     }
@@ -59,15 +82,37 @@ class Worker extends Connection
 
     protected static function resetStd()
     {
-        
+        global $STDOUT, $STDERR;
+        $handle = fopen(self::$stdoutFile,"a");
+        if($handle) 
+        {
+            unset($handle);
+            @fclose(STDOUT);
+            @fclose(STDERR);
+            $STDOUT = fopen(self::$stdoutFile,"a");
+            $STDERR = fopen(self::$stdoutFile,"a");
+        }
+        else
+        {
+            throw new Exception('can not open stdoutFile ' . self::$stdoutFile);
+        }
     }
-
+    
+    public static function savePid()
+    {
+        $master_pid = posix_getpid();
+        // 保存到文件中，用于实现停止、重启
+        if(false === @file_put_contents(self::$pidFile, $master_pid))
+        {
+            throw new Exception('can not save pid to ' . self::$pidFile);
+        }
+    }
 
     protected static function createWorkers()
     {
-        foreach(self::$workers as $address=>$worker)
+        foreach(self::$_workers as $address=>$worker)
         {
-            while(count(self::$pidMap[$address]) < $worker->count)
+            while(count(self::$_pidMap[$address]) < $worker->count)
             {
                 self::forkOneWorker($worker);
             }
@@ -79,17 +124,17 @@ class Worker extends Connection
         $pid = pcntl_fork();
         if($pid > 0)
         {
-            self::$pidMap[$worker->address][$pid] = $pid;
+            self::$_pidMap[$worker->address][$pid] = $pid;
         }
         elseif(0 === $pid)
         {
-            self::$pidMap = self::$workers = array();
+            self::$_pidMap = self::$_workers = array();
             $worker->run();
             exit(250);
         }
         else
         {
-            throw new \Exception("forkOneWorker fail");
+            throw new Exception("forkOneWorker fail");
         }
     }
 
@@ -100,11 +145,11 @@ class Worker extends Connection
             $pid = pcntl_wait($status, WUNTRACED);
             if($pid > 0)
             {
-                foreach(self::$pidMap as $address => $pid_array)
+                foreach(self::$_pidMap as $address => $pid_array)
                 {
                     if(isset($pid_array[$pid]))
                     {
-                        unset(self::$pidMap[$address][$pid]);
+                        unset(self::$_pidMap[$address][$pid]);
                         break;
                     }
                 }
@@ -118,10 +163,10 @@ class Worker extends Connection
         $this->socket = stream_socket_server($address, $errno, $errmsg);
         if(!$this->socket)
         {
-            throw new \Exception($errmsg);
+            throw new Exception($errmsg);
         }
-        self::$workers[$address] = $this;
-        self::$pidMap[$address] = array();
+        self::$_workers[$address] = $this;
+        self::$_pidMap[$address] = array();
         $this->address = $address;
     }
     

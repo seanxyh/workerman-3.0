@@ -12,19 +12,19 @@ class Libevent implements BaseEvent
      * eventBase实例
      * @var object
      */
-    public $eventBase = null;
+    protected $eventBase = null;
     
     /**
      * 记录所有监听事件 
      * @var array
      */
-    public $allEvents = array();
+    protected $allEvents = array();
     
     /**
      * 记录信号回调函数
      * @var array
      */
-    public $eventSignal = array();
+    protected $eventSignal = array();
     
     /**
      * 初始化eventBase
@@ -32,14 +32,14 @@ class Libevent implements BaseEvent
      */
     public function __construct()
     {
-        $this->eventBase = event_base_new();
+        $this->_eventBase = event_base_new();
     }
    
     /**
      * 添加事件
      * @see BaseEvent::add()
      */
-    public function add($fd, $flag, $func, $args = null)
+    public function add($fd, $flag, $func)
     {
         $fd_key = (int)$fd;
         
@@ -47,19 +47,19 @@ class Libevent implements BaseEvent
         {
             $real_flag = EV_SIGNAL | EV_PERSIST;
             // 创建一个用于监听的event
-            $this->eventSignal[$fd_key] = event_new();
+            $this->_eventSignal[$fd_key] = event_new();
             // 设置监听处理函数
-            if(!event_set($this->eventSignal[$fd_key], $fd, $real_flag, $func, $args))
+            if(!event_set($this->_eventSignal[$fd_key], $fd, $real_flag, $func, null))
             {
                 return false;
             }
             // 设置event base
-            if(!event_base_set($this->eventSignal[$fd_key], $this->eventBase))
+            if(!event_base_set($this->_eventSignal[$fd_key], $this->_eventBase))
             {
                 return false;
             }
             // 添加事件
-            if(!event_add($this->eventSignal[$fd_key]))
+            if(!event_add($this->_eventSignal[$fd_key]))
             {
                 return false;
             }
@@ -69,22 +69,22 @@ class Libevent implements BaseEvent
         $real_flag = $flag == self::EV_READ ? EV_READ | EV_PERSIST : EV_WRITE | EV_PERSIST;
         
         // 创建一个用于监听的event
-        $this->allEvents[$fd_key][$flag] = event_new();
+        $this->_allEvents[$fd_key][$flag] = event_new();
         
         // 设置监听处理函数
-        if(!event_set($this->allEvents[$fd_key][$flag], $fd, $real_flag, $func, $args))
+        if(!event_set($this->_allEvents[$fd_key][$flag], $fd, $real_flag, $func, null))
         {
             return false;
         }
         
         // 设置event base
-        if(!event_base_set($this->allEvents[$fd_key][$flag], $this->eventBase))
+        if(!event_base_set($this->_allEvents[$fd_key][$flag], $this->_eventBase))
         {
             return false;
         }
         
         // 添加事件
-        if(!event_add($this->allEvents[$fd_key][$flag]))
+        if(!event_add($this->_allEvents[$fd_key][$flag]))
         {
             return false;
         }
@@ -103,21 +103,21 @@ class Libevent implements BaseEvent
             // 读事件
             case BaseEvent::EV_READ:
             case BaseEvent::EV_WRITE:
-                if(isset($this->allEvents[$fd_key][$flag]))
+                if(isset($this->_allEvents[$fd_key][$flag]))
                 {
-                    event_del($this->allEvents[$fd_key][$flag]);
+                    event_del($this->_allEvents[$fd_key][$flag]);
                 }
-                unset($this->allEvents[$fd_key][$flag]);
-                if(empty($this->allEvents[$fd_key]))
+                unset($this->_allEvents[$fd_key][$flag]);
+                if(empty($this->_allEvents[$fd_key]))
                 {
-                    unset($this->allEvents[$fd_key]);
+                    unset($this->_allEvents[$fd_key]);
                 }
             case  BaseEvent::EV_SIGNAL:
-                if(isset($this->eventSignal[$fd_key]))
+                if(isset($this->_eventSignal[$fd_key]))
                 {
-                    event_del($this->eventSignal[$fd_key]);
+                    event_del($this->_eventSignal[$fd_key]);
                 }
-                unset($this->eventSignal[$fd_key]);
+                unset($this->_eventSignal[$fd_key]);
         }
         return true;
     }
@@ -128,7 +128,7 @@ class Libevent implements BaseEvent
      */
     public function loop()
     {
-        event_base_loop($this->eventBase);
+        event_base_loop($this->_eventBase);
     }
 }
 

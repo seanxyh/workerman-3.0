@@ -27,7 +27,7 @@ $worker->onClose = function($connection)
 };
 
 // run worker
-$worker->run();
-Worker::start();
+//$worker->run();
+Worker::runAll();
 
 
