@@ -50,7 +50,10 @@ class Connection
         $this->_remoteAddress = $address;
         $this->_connectionTimeout = $connection_timeout;
         $this->_context = $context;
-        $this->_status = self::STATUS_CONNECTING;
+        if($address)
+        {
+            $this->_status = self::STATUS_CONNECTING;
+        }
     }
     
     public function send($send_buffer)
@@ -141,9 +144,9 @@ class Connection
     {
         if(!$this->_remoteIp)
         {
-            if($address = stream_socket_get_name($this->socket, false))
+            if($this->_remoteAddress = stream_socket_get_name($this->socket, false))
             {
-                list($this->_remoteIp, $this->_remotePort) = explode(':', $address, 2);
+                list($this->_remoteIp, $this->_remotePort) = explode(':', $this->_remoteAddress, 2);
             }
         }
         return $this->_remoteIp;
@@ -153,9 +156,9 @@ class Connection
     {
         if(!$this->_remotePort)
         {
-            if($address = stream_socket_get_name($this->socket, false))
+            if($this->_remoteAddress = stream_socket_get_name($this->socket, false))
             {
-                list($this->_remoteIp, $this->_remotePort) = explode(':', $address, 2);
+                list($this->_remoteIp, $this->_remotePort) = explode(':', $this->_remoteAddress, 2);
             }
         }
         return $this->_remotePort;
