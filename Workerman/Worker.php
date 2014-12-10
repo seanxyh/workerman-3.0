@@ -177,6 +177,7 @@ class Worker
         }
         self::$_workers[$address] = $this;
         self::$_pidMap[$address] = array();
+        $worker->address = $address;
     }
     
     public function run()
