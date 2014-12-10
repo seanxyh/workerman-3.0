@@ -31,11 +31,14 @@ class Worker
     
     public static $pidFile = '/tmp/workerman.pid';
     
+    public static $globalEvent = null;
+    
     protected $_mainSocket = null;
 
     protected static $_workers = array();
     
     protected static $_pidMap = array();
+    
 
     public static function runAll()
     {

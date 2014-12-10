@@ -3,6 +3,7 @@ namespace Workerman;
 use Workerman\Events\Libevent;
 use Workerman\Events\Select;
 use Workerman\Events\BaseEvent;
+use \Exception;
 
 class Connection
 {
@@ -15,8 +16,6 @@ class Connection
     const STATUS_CLOSING = 4;
     
     const STATUS_CLOSED = 8;
-
-    public static $globalEvent = null;
 
     public $event = null;
 
@@ -31,6 +30,8 @@ class Connection
     public $onClose = null;
     
     public $onError = null;
+    
+    protected $_connectionTimeout = 8;
 
     protected $_sendBuffer = '';
 
@@ -39,18 +40,35 @@ class Connection
     protected $_remoteIp = '';
     
     protected $_remotePort = 0;
+    
+    protected $_remoteAddress = '';
+    
+    protected $_context = null;
 
-    public function __construct($address = '', $context = null)
+    public function __construct($address = '', $connection_timeout = 8, $context = null)
     {
-        if($address)
-        {
-            $this->socket = stream_socket_client($address, $errno, $errmsg, 0, STREAM_CLIENT_ASYNC_CONNECT, $context);
-            $this->_status = self::STATUS_CONNECTING;
-        }
+        $this->_remoteAddress = $address;
+        $this->_connectionTimeout = $connection_timeout;
+        $this->_context = $context;
+        $this->_status = self::STATUS_CONNECTING;
     }
     
     public function send($send_buffer)
     {
+        if($this->_status === self::STATUS_CONNECTING)
+        {
+            $this->socket = stream_socket_client($this->_remoteAddress, $errno, $errmsg, $this->connectionTimeout, STREAM_CLIENT_CONNECT, $this->_context);
+            if($this->socket === false)
+            {
+                if($this->onError)
+                {
+                    $this->_status = self::STATUS_CLOSED;
+                    $func = $this->onError;
+                    $func();
+                }
+                return false;
+            }
+        }
         if($this->_sendBuffer === '')
         {
             $len = fwrite($this->socket, $send_buffer);
@@ -85,15 +103,31 @@ class Connection
         {
             $this->event = $event;
         }
+        elseif(Worker::$globalEvent)
+        {
+            $this->event = Worker::$globalEvent;
+        }
         else
         {
-            $this->event = self::$globalEvent;
+            throw new Exception('event not set');
         }
-        $this->event->add($this->socket, BaseEvent::EV_READ, array($this, 'baseRead'));
+        
         if($this->_status === self::STATUS_CONNECTING)
         {
+            $this->socket = stream_socket_client($this->_remoteAddress, $errno, $errmsg, 0, STREAM_CLIENT_ASYNC_CONNECT, $this->_context);
+            if(false === $this->socket)
+            {
+                if($this->onError)
+                {
+                    $this->_status = self::STATUS_CLOSED;
+                    $func = $this->onError;
+                    $func();
+                }
+                return false;
+            }
             $this->event->add($this->socket, BaseEvent::EV_WRITE, array($this, 'checkConnection'));
         }
+        return $this->event->add($this->socket, BaseEvent::EV_READ, array($this, 'baseRead'));
     }
     
     public function getRemoteIp()
@@ -190,17 +224,18 @@ class Connection
     
     protected function checkConnection($socket)
     {
-        if(feof($socket))
+        if(feof($socket) || feof($socket))
         {
             if($this->onError)
             {
+                $this->_status = self::STATUS_CLOSED;
                 $func = $this->onError;
                 $func($this);
                 $this->shutdown();
             }
             return;
         }
-        
+        $this->_status = self::STATUS_ESTABLISH;
         $this->event->del($this->socket, BaseEvent::EV_WRITE);
         if($this->onConnect)
         {
