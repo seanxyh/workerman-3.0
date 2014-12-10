@@ -14,7 +14,7 @@ $worker->onConnect = function($connection)
 };
 
 // when client send data to 1234 port
-$worker->onMessage = function($connection, $data)
+$worker->onMessage = function($worker, $connection, $data)
 {
     // send data to client
     $connection->send($data);

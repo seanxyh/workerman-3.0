@@ -8,11 +8,13 @@ class Connection
 {
     const READ_BUFFER_SIZE = 8192;
 
-    const STATUS_NULL = 0;
-
     const STATUS_CONNECTING = 1;
+    
+    const STATUS_ESTABLISH = 2;
 
-    const STATUS_CLOSING = 8;
+    const STATUS_CLOSING = 4;
+    
+    const STATUS_CLOSED = 8;
 
     public static $globalEvent = null;
 
@@ -20,23 +22,31 @@ class Connection
 
     public $socket = null;
     
+    public $owner = null;
+    
     public $onConnect = null;
 
     public $onMessage = null;
 
     public $onClose = null;
+    
+    public $onError = null;
 
     protected $_sendBuffer = '';
 
-    protected $_status = self::STATUS_NULL;
+    protected $_status = self::STATUS_ESTABLISH;
     
     protected $_remoteIp = '';
     
     protected $_remotePort = 0;
 
-    public function __construct($socket)
+    public function __construct($address = '', $context = null)
     {
-        $this->socket = $socket;
+        if($address)
+        {
+            $this->socket = stream_socket_client($address, $errno, $errmsg, 0, STREAM_CLIENT_ASYNC_CONNECT, $context);
+            $this->_status = self::STATUS_CONNECTING;
+        }
     }
     
     public function send($send_buffer)
@@ -80,6 +90,10 @@ class Connection
             $this->event = self::$globalEvent;
         }
         $this->event->add($this->socket, BaseEvent::EV_READ, array($this, 'baseRead'));
+        if($this->_status === self::STATUS_CONNECTING)
+        {
+            $this->event->add($this->socket, BaseEvent::EV_WRITE, array($this, 'checkConnection'));
+        }
     }
     
     public function getRemoteIp()
@@ -122,7 +136,7 @@ class Connection
        if($recv_buffer !== '' && $this->onMessage)
        {
            $func = $this->onMessage;
-           $func($this, $recv_buffer);
+           $func($this->owner, $this, $recv_buffer);
        }
     }
 
@@ -170,6 +184,28 @@ class Connection
        }
        $this->event->del($this->socket, BaseEvent::EV_READ);
        $this->event->del($this->socket, BaseEvent::EV_WRITE);
-       fclose($this->socket);
+       @fclose($this->socket);
+       $this->_status = self::STATUS_CLOSED;
+    }
+    
+    protected function checkConnection($socket)
+    {
+        if(feof($socket))
+        {
+            if($this->onError)
+            {
+                $func = $this->onError;
+                $func($this);
+                $this->shutdown();
+            }
+            return;
+        }
+        
+        $this->event->del($this->socket, BaseEvent::EV_WRITE);
+        if($this->onConnect)
+        {
+            $func = $this->onConnect;
+            $func();
+        }
     }
 }

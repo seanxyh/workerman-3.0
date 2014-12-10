@@ -13,8 +13,14 @@ use workerman\Events\Select;
 use workerman\Events\BaseEvent;
 use \Exception;
 
-class Worker extends Connection
+class Worker 
 {
+    public $onConnect = null;
+    
+    public $onMessage = null;
+    
+    public $onClose = null;
+    
     public $count = 1;
     
     public $connections = array();
@@ -24,6 +30,8 @@ class Worker extends Connection
     public static $stdoutFile = '/dev/null';
     
     public static $pidFile = '/tmp/workerman.pid';
+    
+    protected $_mainSocket = null;
 
     protected static $_workers = array();
     
@@ -159,14 +167,13 @@ class Worker extends Connection
     
     public function __construct($address)
     {
-        $this->socket = stream_socket_server($address, $errno, $errmsg);
-        if(!$this->socket)
+        $this->_mainSocket = stream_socket_server($address, $errno, $errmsg);
+        if(!$this->_mainSocket)
         {
             throw new Exception($errmsg);
         }
         self::$_workers[$address] = $this;
         self::$_pidMap[$address] = array();
-        $this->address = $address;
     }
     
     public function run()
@@ -182,7 +189,7 @@ class Worker extends Connection
                 self::$globalEvent = new Select();
             }
         }
-        self::$globalEvent->add($this->socket, BaseEvent::EV_READ, array($this, 'accept'));
+        self::$globalEvent->add($this->_mainSocket, BaseEvent::EV_READ, array($this, 'accept'));
         self::$globalEvent->loop();
     }
 
@@ -194,7 +201,8 @@ class Worker extends Connection
             return;
         }
         stream_set_blocking($new_socket, 0);
-        $connection = new Connection($new_socket);
+        $connection = new Connection();
+        $connection->socket = $new_socket;
         $connection->join();
         if($this->onMessage)
         {
