@@ -114,7 +114,14 @@ class Connection
         
         if($this->_status === self::STATUS_CONNECTING)
         {
-            $this->socket = stream_socket_client($this->_remoteAddress, $errno, $errmsg, 0, STREAM_CLIENT_ASYNC_CONNECT, $this->_context);
+            if($this->_context)
+            {
+                $this->socket = stream_socket_client($this->_remoteAddress, $errno, $errmsg, 0, STREAM_CLIENT_ASYNC_CONNECT, $this->_context);
+            }
+            else
+            {
+                $this->socket = stream_socket_client($this->_remoteAddress, $errno, $errmsg, 0, STREAM_CLIENT_ASYNC_CONNECT);
+            }
             if(false === $this->socket)
             {
                 if($this->onError)
