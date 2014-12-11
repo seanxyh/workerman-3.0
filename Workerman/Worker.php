@@ -64,6 +64,7 @@ class Worker
     public static function runAll()
     {
         self::$_status = self::STATUS_STARTING;
+        Task::init();
         self::installSignal();
         if(self::$daemonize)
         {
