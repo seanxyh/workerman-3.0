@@ -246,7 +246,8 @@ class Worker
                 }
                 else
                 {
-                    if(empty(self::getAllWorkerPids()))
+                    $all_worker_pids = self::getAllWorkerPids();
+                    if(empty($all_worker_pids))
                     {
                         exit(0);
                     }
