@@ -4,6 +4,7 @@ namespace Workerman;
 ini_set('display_errors', 'on');
 
 require_once __DIR__ . '/Connection.php';
+require_once __DIR__ . '/Task.php';
 require_once __DIR__ . '/Events/BaseEvent.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
@@ -15,6 +16,18 @@ use \Exception;
 
 class Worker 
 {
+    const STATUS_STARTING = 1;
+    
+    const STATUS_RUNNING = 2;
+    
+    const STATUS_SHUTDOWN = 4;
+    
+    const STATUS_RELOADING = 8;
+    
+    const KILL_WORKER_TIMER_TIME = 4;
+    
+    public $name = '';
+    
     public $onConnect = null;
     
     public $onMessage = null;
@@ -23,7 +36,11 @@ class Worker
     
     public $count = 1;
     
+    public $logger = null;
+    
     public $connections = array();
+    
+    protected static $masterPid = 0;
     
     public static $daemonize = false;
     
@@ -39,17 +56,55 @@ class Worker
     
     protected static $_pidMap = array();
     
+    protected static $_pidsToRestart = array();
+    
+    protected static $_status = self::STATUS_STARTING;
+    
 
     public static function runAll()
     {
+        self::$_status = self::STATUS_STARTING;
+        self::installSignal();
         if(self::$daemonize)
         {
             self::daemonize();
             self::resetStd();
-            self::savePid();
+            self::saveMasterPid();
         }
         self::createWorkers();
+        self::$_status = self::STATUS_RUNNING;
         self::monitorWorkers();
+    }
+    
+    protected static function installSignal()
+    {
+        // stop
+        pcntl_signal(SIGTERM,  array('\Workerman\Worker', 'signalHandler'), false);
+        // reload
+        pcntl_signal(SIGUSR1, array('\Workerman\Worker', 'signalHandler'), false);
+        // status
+        pcntl_signal(SIGUSR2, array('\Workerman\Worker', 'signalHandler'), false);
+    }
+    
+    public static function signalHandler($signal)
+    {
+        switch($signal)
+        {
+            // stop
+            case SIGTERM:
+                echo "Workerman is shutting down\n";
+                self::stop();
+                break;
+            // reload
+            case SIGUSR1:
+                echo "Workerman reloading\n";
+                self::$_pidsToRestart = self::getAllWorkerPids();
+                self::reload();
+                break;
+            // show status
+            case SIGUSR2:
+                break;
+        }
     }
 
     protected static function daemonize()
@@ -89,7 +144,6 @@ class Worker
         }
     }
 
-
     protected static function resetStd()
     {
         global $STDOUT, $STDERR;
@@ -108,14 +162,27 @@ class Worker
         }
     }
     
-    public static function savePid()
+    protected static function saveMasterPid()
     {
-        $master_pid = posix_getpid();
+        self::$masterPid = posix_getpid();
         // 保存到文件中，用于实现停止、重启
-        if(false === @file_put_contents(self::$pidFile, $master_pid))
+        if(false === @file_put_contents(self::$pidFile, self::$masterPid))
         {
             throw new Exception('can not save pid to ' . self::$pidFile);
         }
+    }
+    
+    protected static function getAllWorkerPids()
+    {
+        $pid_array = array(); 
+        foreach(self::$_pidMap as $address => $worker_pid_array)
+        {
+            foreach($worker_pid_array as $worker_pid)
+            {
+                $pid_array[$worker_pid] = $worker_pid;
+            }
+        }
+        return $pid_array;
     }
 
     protected static function createWorkers()
@@ -152,19 +219,72 @@ class Worker
     {
         while(1)
         {
+            $status = 0;
             $pid = pcntl_wait($status, WUNTRACED);
             if($pid > 0)
             {
-                foreach(self::$_pidMap as $address => $pid_array)
+                foreach(self::$_pidMap as $address => $worker_pid_array)
                 {
-                    if(isset($pid_array[$pid]))
+                    if(isset($worker_pid_array[$pid]))
                     {
+                        if($status !== 0)
+                        {
+                            echo "worker[".self::$_workers[$address]->name.":$pid] exit with status $status/n";
+                        }
+                        if(isset(self::$_pidsToRestart[$pid]))
+                        {
+                            unset(self::$_pidsToRestart[$pid]);
+                            self::reload();
+                        }
                         unset(self::$_pidMap[$address][$pid]);
                         break;
                     }
                 }
-                self::createWorkers();
+                if(self::$_status !== self::STATUS_SHUTDOWN)
+                {
+                    self::createWorkers();
+                }
+                else
+                {
+                    if(empty(self::getAllWorkerPids()))
+                    {
+                        exit(0);
+                    }
+                }
             }
+        }
+    }
+    
+    protected static function reload()
+    {
+        // set status
+        if(self::$_status !== self::STATUS_RELOADING && self::$_status !== self::STATUS_SHUTDOWN)
+        {
+            self::$_status = self::STATUS_RELOADING;
+        }
+        // reload complete
+        if(empty(self::$_pidsToRestart))
+        {
+            if(self::$_status !== self::STATUS_SHUTDOWN)
+            {
+                self::$_status = self::STATUS_RUNNING;
+            }
+            return;
+        }
+        // continue reload
+        $one_worker_pid = current(self::$_pidsToRestart );
+        posix_kill($one_worker_pid, SIGUSR1);
+        Task::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($one_worker_pid, SIGKILL), false);
+    } 
+    
+    protected static function stop()
+    {
+        self::$_status = self::STATUS_SHUTDOWN;
+        $worker_pid_array = self::getAllWorkerPids();
+        foreach($worker_pid_array as $worker_pid)
+        {
+            posix_kill($worker_pid, SIGINT);
+            Task::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($worker_pid, SIGKILL),false);
         }
     }
     
