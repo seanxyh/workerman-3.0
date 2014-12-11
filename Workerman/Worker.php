@@ -221,6 +221,7 @@ class Worker
         {
             $status = 0;
             $pid = pcntl_wait($status, WUNTRACED);
+            pcntl_signal_dispatch();
             if($pid > 0)
             {
                 foreach(self::$_pidMap as $address => $worker_pid_array)
