@@ -65,12 +65,12 @@ class Worker
     {
         self::$_status = self::STATUS_STARTING;
         Timer::init();
+        self::saveMasterPid();
         self::installSignal();
         if(self::$daemonize)
         {
             self::daemonize();
             self::resetStd();
-            self::saveMasterPid();
         }
         self::createWorkers();
         self::$_status = self::STATUS_RUNNING;
@@ -168,10 +168,13 @@ class Worker
     protected static function saveMasterPid()
     {
         self::$masterPid = posix_getpid();
-        // 保存到文件中，用于实现停止、重启
-        if(false === @file_put_contents(self::$pidFile, self::$masterPid))
+        if(self::$daemonize)
         {
-            throw new Exception('can not save pid to ' . self::$pidFile);
+            // 保存到文件中，用于实现停止、重启
+            if(false === @file_put_contents(self::$pidFile, self::$masterPid))
+            {
+                throw new Exception('can not save pid to ' . self::$pidFile);
+            }
         }
     }
     
@@ -360,8 +363,6 @@ class Worker
         self::$globalEvent->add($this->_mainSocket, BaseEvent::EV_READ, array($this, 'accept'));
         self::$globalEvent->loop();
     }
-    
-    
     
     public function stop()
     {
