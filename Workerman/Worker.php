@@ -85,6 +85,15 @@ class Worker
         pcntl_signal(SIGUSR1, array('\Workerman\Worker', 'signalHandler'), false);
         // status
         pcntl_signal(SIGUSR2, array('\Workerman\Worker', 'signalHandler'), false);
+        // ignore
+        pcntl_signal(SIGPIPE, SIG_IGN, false);
+    }
+    
+    protected static function uninstallSignal()
+    {
+        pcntl_signal(SIGTERM, SIG_IGN, false);
+        pcntl_signal(SIGUSR1, SIG_IGN, false);
+        pcntl_signal(SIGUSR2, SIG_IGN, false);
     }
     
     public static function signalHandler($signal)
@@ -207,6 +216,8 @@ class Worker
         elseif(0 === $pid)
         {
             self::$_pidMap = self::$_workers = array();
+            Task::delAll();
+            self::uninstallSignal();
             $worker->run();
             exit(250);
         }
@@ -231,7 +242,7 @@ class Worker
                     {
                         if($status !== 0)
                         {
-                            echo "worker[".self::$_workers[$address]->name.":$pid] exit with status $status/n";
+                            echo "worker[".self::$_workers[$address]->name.":$pid] exit with status $status\n";
                         }
                         if(isset(self::$_pidsToRestart[$pid]))
                         {
@@ -328,17 +339,7 @@ class Worker
             return;
         }
         stream_set_blocking($new_socket, 0);
-        $connection = new Connection();
-        $connection->socket = $new_socket;
-        $connection->join();
-        if($this->onMessage)
-        {
-            $connection->onMessage = $this->onMessage;
-        }
-        if($this->onClose)
-        {
-            $connection->onClose = $this->onClose;
-        }
+        $connection = new Connection($this, $new_socket);
         if($this->onConnect)
         {
             $func = $this->onConnect;
