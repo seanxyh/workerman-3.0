@@ -89,6 +89,22 @@ class Worker
         pcntl_signal(SIGPIPE, SIG_IGN, false);
     }
     
+    protected static function reinstallSignal()
+    {
+        // uninstall stop signal handler
+        pcntl_signal(SIGINT,  SIG_IGN, false);
+        // uninstall reload signal handler
+        pcntl_signal(SIGUSR1, SIG_IGN, false);
+        // uninstall  status signal handler
+        pcntl_signal(SIGUSR2, SIG_IGN, false);
+        // reinstall stop signal handler
+        self::$globalEvent->add(SIGINT, BaseEvent::EV_SIGNAL, array($this, 'signalHandler'));
+        //  uninstall  reload signal handler
+        self::$globalEvent->add(SIGUSR1, BaseEvent::EV_SIGNAL, array($this, 'signalHandler'));
+        // uninstall  status signal handler
+        self::$globalEvent->add(SIGUSR2, BaseEvent::EV_SIGNAL, array($this, 'signalHandler'));
+    }
+    
     public static function signalHandler($signal)
     {
         switch($signal)
@@ -306,10 +322,6 @@ class Worker
             foreach(self::$_workers as $worker)
             {
                 $worker->stop();
-                foreach($worker->connections as $connection)
-                {
-                    $connection->close();
-                }
             }
             if(self::allWorkhasBeenDone())
             {
@@ -360,6 +372,7 @@ class Worker
                 self::$globalEvent = new Select();
             }
         }
+        self::reinstallSignal();
         self::$globalEvent->add($this->_mainSocket, BaseEvent::EV_READ, array($this, 'accept'));
         self::$globalEvent->loop();
     }
@@ -369,6 +382,11 @@ class Worker
         self::$globalEvent->del($this->_mainSocket, BaseEvent::EV_READ);
         fclose($this->_mainSocket);
         $this->_mainSocket = null;
+        
+        foreach($this->connections as $connection)
+        {
+            $connection->close();
+        }
     }
 
     public function accept($socket)
