@@ -105,10 +105,10 @@ class Connection
            $this->shutdown();
            return;
        }
-       if($recv_buffer !== '' && $this->owner->onMessage)
+       if($recv_buffer !== '' && $this->_owner->onMessage)
        {
-           $func = $this->owner->onMessage;
-           $func($this->owner, $this, $recv_buffer);
+           $func = $this->_owner->onMessage;
+           $func($this->_owner, $this, $recv_buffer);
        }
     }
 
@@ -149,9 +149,9 @@ class Connection
 
     public function shutdown()
     {
-       if($this->owner->onClose)
+       if($this->_owner->onClose)
        {
-           $func = $this->owner->onClose;
+           $func = $this->_owner->onClose;
            $func($this);
        }
        Worker::$globalEvent->del($this->_socket, BaseEvent::EV_READ);
