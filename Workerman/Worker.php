@@ -272,7 +272,7 @@ class Worker
                     $all_worker_pids = self::getAllWorkerPids();
                     if(empty($all_worker_pids))
                     {
-                        echo "Workerman has been stoped\n";
+                        echo "Workerman has been stopped\n";
                         exit(0);
                     }
                 }
