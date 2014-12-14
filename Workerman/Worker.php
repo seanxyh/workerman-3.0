@@ -379,7 +379,7 @@ class Worker
         }
         stream_set_blocking($new_socket, 0);
         $connection = new Connection($this, $new_socket);
-        $this->connections[(int)$connection] = $connection;
+        $this->connections[(int)$new_socket] = $connection;
         if($this->onConnect)
         {
             $func = $this->onConnect;
