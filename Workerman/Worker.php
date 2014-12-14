@@ -80,7 +80,7 @@ class Worker
     protected static function installSignal()
     {
         // stop
-        pcntl_signal(SIGTERM,  array('\Workerman\Worker', 'signalHandler'), false);
+        pcntl_signal(SIGINT,  array('\Workerman\Worker', 'signalHandler'), false);
         // reload
         pcntl_signal(SIGUSR1, array('\Workerman\Worker', 'signalHandler'), false);
         // status
@@ -94,7 +94,7 @@ class Worker
         switch($signal)
         {
             // stop
-            case SIGTERM:
+            case SIGINT:
                 echo "Workerman is shutting down\n";
                 self::stopAll();
                 break;
