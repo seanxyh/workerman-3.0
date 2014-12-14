@@ -4,8 +4,6 @@ ini_set('display_errors', 'on');
 require_once './Workerman/Worker.php';
 use Workerman\Worker;
 
-require_once './Workerman/Worker.php';
-
 // create socket and listen 1234 port
 $worker = new Workerman\Worker("tcp://0.0.0.0:1234");
 

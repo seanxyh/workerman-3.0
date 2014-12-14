@@ -65,13 +65,13 @@ class Worker
     {
         self::$_status = self::STATUS_STARTING;
         Timer::init();
-        self::saveMasterPid();
         self::installSignal();
         if(self::$daemonize)
         {
             self::daemonize();
             self::resetStd();
         }
+        self::saveMasterPid();
         self::createWorkers();
         self::$_status = self::STATUS_RUNNING;
         self::monitorWorkers();
