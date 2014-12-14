@@ -111,12 +111,10 @@ class Worker
         {
             // stop
             case SIGINT:
-                echo "Workerman is shutting down\n";
                 self::stopAll();
                 break;
             // reload
             case SIGUSR1:
-                echo "Workerman reloading\n";
                 self::$_pidsToRestart = self::getAllWorkerPids();
                 self::reload();
                 break;
@@ -286,6 +284,7 @@ class Worker
         // set status
         if(self::$_status !== self::STATUS_RELOADING && self::$_status !== self::STATUS_SHUTDOWN)
         {
+            echo "Workerman reloading\n";
             self::$_status = self::STATUS_RELOADING;
         }
         // reload complete
@@ -309,6 +308,7 @@ class Worker
         // for master process
         if(Worker::$masterPid === posix_getpid())
         {
+            echo "Workerman is shutting down\n";
             $worker_pid_array = self::getAllWorkerPids();
             foreach($worker_pid_array as $worker_pid)
             {
