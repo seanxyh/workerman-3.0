@@ -37,11 +37,11 @@ class Timer
     {
         if($event)
         {
-            $event->add(SIGALRM, BaseEvent::EV_SIGNAL, array('\Workerman\Task', 'signalHandle'));
+            $event->add(SIGALRM, BaseEvent::EV_SIGNAL, array('\Workerman\Timer', 'signalHandle'));
         }
         else 
         {
-            pcntl_signal(SIGALRM, array('\Workerman\Task', 'signalHandle'), false);
+            pcntl_signal(SIGALRM, array('\Workerman\Timer', 'signalHandle'), false);
         }
     }
     
@@ -73,10 +73,7 @@ class Timer
         }
         if(!is_callable($func))
         {
-            if(class_exists('\Man\Core\Lib\Log'))
-            {
-                echo var_export($func, true). "not callable\n";
-            }
+            echo var_export($func, true). "not callable\n";
             return false;
         }
         
