@@ -3,6 +3,7 @@ namespace Workerman;
 use Workerman\Events\Libevent;
 use Workerman\Events\Select;
 use Workerman\Events\BaseEvent;
+use Workerman\Worker;
 use \Exception;
 
 class Connection
@@ -16,6 +17,8 @@ class Connection
     const STATUS_CLOSING = 4;
     
     const STATUS_CLOSED = 8;
+    
+    protected $_connectionId = 0;
     
     protected $_owner = null;
     
@@ -35,6 +38,7 @@ class Connection
     {
         $this->_owner = $owner;
         $this->_socket = $socket;
+        $this->_connectionId = (int)$socket;
         Worker::$globalEvent->add($this->_socket, BaseEvent::EV_READ, array($this, 'baseRead'));
     }
     
@@ -115,7 +119,7 @@ class Connection
     public function baseWrite()
     {
         $len = fwrite($this->_socket, $this->_sendBuffer);
-        if($len == strlen($this->_sendBuffer))
+        if($len === strlen($this->_sendBuffer))
         {
             Worker::$globalEvent->del($this->_socket, BaseEvent::EV_WRITE);
             $this->_sendBuffer = '';
@@ -157,6 +161,11 @@ class Connection
        Worker::$globalEvent->del($this->_socket, BaseEvent::EV_READ);
        Worker::$globalEvent->del($this->_socket, BaseEvent::EV_WRITE);
        @fclose($this->_socket);
+       unset($this->_owner->connections[$this->_connectionId]);
        $this->_status = self::STATUS_CLOSED;
+       if(Worker::isStopingAll() && Worker::allWorkHasBeenDone())
+       {
+           exit(0);
+       }
     }
 }

@@ -9,13 +9,13 @@ use \Workerman\Events\BaseEvent;
  * <b>使用示例:</b>
  * <pre>
  * <code>
- * Workerman\Task::init();
- * Workerman\Task::add($time_interval, array('class', 'method'), array($arg1, $arg2..));
+ * Workerman\Timer::init();
+ * Workerman\Timer::add($time_interval, array('class', 'method'), array($arg1, $arg2..));
  * <code>
  * </pre>
 * @author walkor <walkor@workerman.net>
  */
-class Task 
+class Timer 
 {
     /**
      * 每个任务定时时长及对应的任务（函数）

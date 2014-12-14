@@ -4,7 +4,7 @@ namespace Workerman;
 ini_set('display_errors', 'on');
 
 require_once __DIR__ . '/Connection.php';
-require_once __DIR__ . '/Task.php';
+require_once __DIR__ . '/Timer.php';
 require_once __DIR__ . '/Events/BaseEvent.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
@@ -24,7 +24,7 @@ class Worker
     
     const STATUS_RELOADING = 8;
     
-    const KILL_WORKER_TIMER_TIME = 4;
+    const KILL_WORKER_TIMER_TIME = 1;
     
     public $name = '';
     
@@ -64,7 +64,7 @@ class Worker
     public static function runAll()
     {
         self::$_status = self::STATUS_STARTING;
-        Task::init();
+        Timer::init();
         self::installSignal();
         if(self::$daemonize)
         {
@@ -89,13 +89,6 @@ class Worker
         pcntl_signal(SIGPIPE, SIG_IGN, false);
     }
     
-    protected static function uninstallSignal()
-    {
-        pcntl_signal(SIGTERM, SIG_IGN, false);
-        pcntl_signal(SIGUSR1, SIG_IGN, false);
-        pcntl_signal(SIGUSR2, SIG_IGN, false);
-    }
-    
     public static function signalHandler($signal)
     {
         switch($signal)
@@ -103,7 +96,7 @@ class Worker
             // stop
             case SIGTERM:
                 echo "Workerman is shutting down\n";
-                self::stop();
+                self::stopAll();
                 break;
             // reload
             case SIGUSR1:
@@ -215,9 +208,9 @@ class Worker
         }
         elseif(0 === $pid)
         {
-            self::$_pidMap = self::$_workers = array();
-            Task::delAll();
-            self::uninstallSignal();
+            self::$_pidMap = array();
+            self::$_workers = array($this->address => $this);
+            Timer::delAll();
             $worker->run();
             exit(250);
         }
@@ -288,18 +281,55 @@ class Worker
         // continue reload
         $one_worker_pid = current(self::$_pidsToRestart );
         posix_kill($one_worker_pid, SIGUSR1);
-        Task::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($one_worker_pid, SIGKILL), false);
+        Timer::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($one_worker_pid, SIGKILL), false);
     } 
     
-    protected static function stop()
+    protected static function stopAll()
     {
         self::$_status = self::STATUS_SHUTDOWN;
-        $worker_pid_array = self::getAllWorkerPids();
-        foreach($worker_pid_array as $worker_pid)
+        // for master process
+        if(Worker::$masterPid === posix_getpid())
         {
-            posix_kill($worker_pid, SIGINT);
-            Task::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($worker_pid, SIGKILL),false);
+            $worker_pid_array = self::getAllWorkerPids();
+            foreach($worker_pid_array as $worker_pid)
+            {
+                posix_kill($worker_pid, SIGINT);
+                Timer::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($worker_pid, SIGKILL),false);
+            }
         }
+        // for worker process
+        else
+        {
+            foreach(self::$_workers as $worker)
+            {
+                $worker->stop();
+                foreach($worker->connections as $connection)
+                {
+                    $connection->close();
+                }
+            }
+            if(self::allWorkhasBeenDone())
+            {
+                exit(0);
+            }
+        }
+    }
+    
+    public static function allWorkHasBeenDone()
+    {
+        foreach(self::$_workers as $worker)
+        {
+            if(!empty($worker->connections))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    public static function isStopingAll()
+    {
+        return self::$_status === self::STATUS_SHUTDOWN;
     }
     
     public function __construct($address)
@@ -330,6 +360,15 @@ class Worker
         self::$globalEvent->add($this->_mainSocket, BaseEvent::EV_READ, array($this, 'accept'));
         self::$globalEvent->loop();
     }
+    
+    
+    
+    public function stop()
+    {
+        self::$globalEvent->del($this->_mainSocket, BaseEvent::EV_READ);
+        fclose($this->_mainSocket);
+        $this->_mainSocket = null;
+    }
 
     public function accept($socket)
     {
@@ -340,6 +379,7 @@ class Worker
         }
         stream_set_blocking($new_socket, 0);
         $connection = new Connection($this, $new_socket);
+        $this->connections[(int)connections] = $connection;
         if($this->onConnect)
         {
             $func = $this->onConnect;
