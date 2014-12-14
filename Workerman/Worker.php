@@ -209,7 +209,7 @@ class Worker
         elseif(0 === $pid)
         {
             self::$_pidMap = array();
-            self::$_workers = array($this->address => $this);
+            self::$_workers = array($worker->address => $worker);
             Timer::delAll();
             $worker->run();
             exit(250);
