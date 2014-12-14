@@ -98,11 +98,11 @@ class Worker
         // uninstall  status signal handler
         pcntl_signal(SIGUSR2, SIG_IGN, false);
         // reinstall stop signal handler
-        self::$globalEvent->add(SIGINT, BaseEvent::EV_SIGNAL, array($this, 'signalHandler'));
+        self::$globalEvent->add(SIGINT, BaseEvent::EV_SIGNAL, array('\Workerman\Worker', 'signalHandler'));
         //  uninstall  reload signal handler
-        self::$globalEvent->add(SIGUSR1, BaseEvent::EV_SIGNAL, array($this, 'signalHandler'));
+        self::$globalEvent->add(SIGUSR1, BaseEvent::EV_SIGNAL,array('\Workerman\Worker', 'signalHandler'));
         // uninstall  status signal handler
-        self::$globalEvent->add(SIGUSR2, BaseEvent::EV_SIGNAL, array($this, 'signalHandler'));
+        self::$globalEvent->add(SIGUSR2, BaseEvent::EV_SIGNAL, array('\Workerman\Worker', 'signalHandler'));
     }
     
     public static function signalHandler($signal)
