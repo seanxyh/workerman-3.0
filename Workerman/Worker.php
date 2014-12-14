@@ -272,6 +272,7 @@ class Worker
                     $all_worker_pids = self::getAllWorkerPids();
                     if(empty($all_worker_pids))
                     {
+                        echo "Workerman has been stoped\n";
                         exit(0);
                     }
                 }
@@ -308,7 +309,7 @@ class Worker
         // for master process
         if(Worker::$masterPid === posix_getpid())
         {
-            echo "Workerman is shutting down\n";
+            echo "Stoping Workerman...\n";
             $worker_pid_array = self::getAllWorkerPids();
             foreach($worker_pid_array as $worker_pid)
             {
@@ -323,7 +324,7 @@ class Worker
             {
                 $worker->stop();
             }
-            if(self::allWorkhasBeenDone())
+            if(self::allWorkHasBeenDone())
             {
                 exit(0);
             }
