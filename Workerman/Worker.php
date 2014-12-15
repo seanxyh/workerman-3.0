@@ -450,7 +450,7 @@ class Worker
         {
             flock($handle, LOCK_EX);
             $worker = current(self::$_workers);
-            $wrker_status_str = posix_getpid()."\t".str_pad(round(memory_get_usage()/(1024*1024),2)."M", 7)." " .str_pad($worker->getSocketName(), 20) ." ". self::$workerStatistics['start_time'] ." ".str_pad(($worker->name == $worker->getSocketName ? 'none' : $worker->name), self::$_maxWorkerNameLength)." ";
+            $wrker_status_str = posix_getpid()."\t".str_pad(round(memory_get_usage()/(1024*1024),2)."M", 7)." " .str_pad($worker->getSocketName(), 20) ." ". self::$workerStatistics['start_timestamp'] ." ".str_pad(($worker->name == $worker->getSocketName() ? 'none' : $worker->name), self::$_maxWorkerNameLength)." ";
             $wrker_status_str .=  str_pad(self::$workerStatistics['total_request'], 14)." ".str_pad(self::$workerStatistics['send_fail'],9)." ".str_pad(self::$workerStatistics['throw_exception'],15)."\n";
             file_put_contents($status_file, $wrker_status_str, FILE_APPEND);
             flock($handle, LOCK_UN);
