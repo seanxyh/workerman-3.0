@@ -59,6 +59,7 @@ class Connection
             {
                 if(feof($this->_socket))
                 {
+                    Worker::$workerStatistics['send_fail']++;
                     $this->shutdown();
                     return;
                 }
@@ -146,6 +147,7 @@ class Connection
         {
            if(feof($this->_socket))
            {
+               Worker::$workerStatistics['send_fail']++;
                $this->shutdown();
            }
         }
