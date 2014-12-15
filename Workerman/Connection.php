@@ -112,7 +112,16 @@ class Connection
        if($recv_buffer !== '' && $this->_owner->onMessage)
        {
            $func = $this->_owner->onMessage;
-           $func($this->_owner, $this, $recv_buffer);
+           Worker::$workerStatistics['total_request']++;
+           try 
+           {
+               $func($this->_owner, $this, $recv_buffer);
+           }
+           catch(Exception $e)
+           {
+               Worker::$workerStatistics['throw_exception']++;
+               echo $e;
+           }
        }
     }
 
@@ -156,7 +165,15 @@ class Connection
        if($this->_owner->onClose)
        {
            $func = $this->_owner->onClose;
-           $func($this);
+           try
+           {
+               $func($this);
+           }
+           catch (Exception $e)
+           {
+               Worker::$workerStatistics['throw_exception']++;
+               echo $e;
+           }
        }
        Worker::$globalEvent->del($this->_socket, BaseEvent::EV_READ);
        Worker::$globalEvent->del($this->_socket, BaseEvent::EV_WRITE);
