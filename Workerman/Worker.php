@@ -479,7 +479,7 @@ class Worker
             }
         }
         self::reinstallSignal();
-        self::$_workerStatistics['start_timestamp'] = time();
+        self::$workerStatistics['start_timestamp'] = time();
         self::$globalEvent->add($this->_mainSocket, BaseEvent::EV_READ, array($this, 'accept'));
         self::$globalEvent->loop();
     }
