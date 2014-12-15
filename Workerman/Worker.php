@@ -139,6 +139,7 @@ class Worker
                 break;
             // show status
             case SIGUSR2:
+                self::writeStatisticsToStatusFile();
                 break;
         }
     }
@@ -407,6 +408,8 @@ class Worker
     protected static function writeStatisticsToStatusFile()
     {
         $status_file = sys_get_temp_dir().'/workerman.status';
+        
+        // for master process
         if(self::$masterPid === posix_getpid())
         {
             $loadavg = sys_getloadavg();
@@ -433,8 +436,15 @@ class Worker
             }
             file_put_contents($status_file,  "---------------------------------------PROCESS STATUS-------------------------------------------\n", FILE_APPEND);
             file_put_contents($status_file, "pid\tmemory  ".str_pad('listening', 20)." timestamp  ".str_pad('worker_name', self::$_maxWorkerNameLength)." ".str_pad('total_request', 13)." ".str_pad('send_fail', 9)." ".str_pad('throw_exception', 15)."\n", FILE_APPEND);
+            
+            foreach(self::getAllWorkerPids() as $worker_pid)
+            {
+                posix_kill($worker_pid, SIGUSR2);
+            }
             return;
         }
+        
+        // for worker process
         $handle = fopen($status_file, 'r');
         if($handle)
         {
