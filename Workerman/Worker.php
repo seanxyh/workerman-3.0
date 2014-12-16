@@ -390,6 +390,7 @@ class Worker
                 {
                     if(isset($worker_pid_array[$pid]))
                     {
+                        $worker = self::$_workers[$socket_name];
                         // check status
                         if($status !== 0)
                         {
@@ -397,7 +398,6 @@ class Worker
                         }
                        
                         // statistics
-                        $worker = self::$_workers[$socket_name];
                         if(!isset(self::$_globalStatistics['worker_exit_info'][$worker->getSocketName()][$status]))
                         {
                             self::$_globalStatistics['worker_exit_info'][$worker->getSocketName()][$status] = 0;
