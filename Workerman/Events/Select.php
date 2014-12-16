@@ -63,7 +63,7 @@ class Select implements BaseEvent
      */
     public function signalHandler($signal)
     {
-        call_user_func_array($this->_signalEvents[$signal][self::EV_SIGNAL][0], array($signal, self::EV_SIGNAL, $signal));
+        call_user_func_array($this->_signalEvents[$signal][self::EV_SIGNAL][0], array($signal));
     }
     
     /**

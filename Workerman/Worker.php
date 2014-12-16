@@ -14,6 +14,10 @@ use Workerman\Events\Select;
 use Workerman\Events\BaseEvent;
 use \Exception;
 
+/**
+ * 
+ * @author walkor<walkor@workerman.net>
+ */
 class Worker 
 {
     const VERSION = 3.0;
@@ -37,8 +41,6 @@ class Worker
     public $onClose = null;
     
     public $count = 1;
-    
-    public $logger = null;
     
     public $connections = array();
     
@@ -66,6 +68,8 @@ class Worker
     
     protected static $_maxWorkerNameLength = 12;
     
+    protected static $_statisticsFile = '';
+    
     protected static $_globalStatistics = array(
         'start_timestamp' => 0,
         'worker_exit_info' => array()
@@ -91,9 +95,93 @@ class Worker
     
     public static function init()
     {
+        if(empty(self::$pidFile))
+        {
+            $backtrace = debug_backtrace();
+            $start_file = $backtrace[count($backtrace)-1]['file'];
+            self::$pidFile = sys_get_temp_dir()."/workerman.".fileinode($start_file).".pid";
+        }
         self::$_status = self::STATUS_STARTING;
         self::$_globalStatistics['start_timestamp'] = time();
+        self::$_statisticsFile = sys_get_temp_dir().'/workerman.status';
         Timer::init();
+    }
+    /**
+     * php yourfile.php start | stop | restart | reload | status
+     */
+    public static function parseCommand()
+    {
+        $start_file = $argv[0]; 
+        if(!isset($argv[1]))
+        {
+            exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
+        }
+        $command = trim($argv[1]);
+        switch($command)
+        {
+            case 'start':
+                break;
+            case 'status':
+            case 'restart':
+            case 'stop':
+                if(!is_file(self::$pidFile))
+                {
+                    exit("$start_file not run\n");
+                }
+                $master_pid = @file_get_contents(self::$pidFile);
+                $master_is_alive = @posix_kill($master_pid, 0);
+                if(!$master_is_alive)
+                {
+                    exit("$start_file not run\n");
+                }
+                
+                // show status of workerman
+                if($command === 'status')
+                {
+                    // try to delete the statistics file , avoid read dirty data
+                    if(is_file(self::$_statisticsFile))
+                    {
+                        @unlink(self::$_statisticsFile);
+                    }
+                    // send SIGUSR2 to master process ,then master process will send SIGUSR2 to all children processes
+                    // all processes will write statistics data to statistics file
+                    posix_kill($master_pid, SIGUSR2);
+                    // wait all processes wirte statistics data
+                    usleep(100000);
+                    // display statistics file
+                    readfile(self::$_statisticsFile);
+                    exit(0);
+                }
+                
+                echo "Stopping Workerman[$start_file] ...";
+                // send SIGINT to master process, master process will stop all children process and exit
+                posix_kill($master_pid, SIGINT);
+                // if $timeout seconds master process not exit then dispaly stop failure
+                $timeout = 5;
+                // a recording start time
+                $start_time = time();
+                while(1)
+                {
+                    $master_is_alive = posix_kill($master_pid, 0);
+                    if($master_is_alive)
+                    {
+                        // check whether has timed out
+                        if(time() - $start_time >= $timeout)
+                        {
+                            exit("Workerman[$start_file] stop fail\n");
+                        }
+                        // avoid the cost of CPU time, sleep for a while
+                        usleep(10000);
+                        continue;
+                    }
+                    echo "Workerman[$start_file] stop success\n";
+                    if($command === 'stop')
+                    {
+                        exit(0);
+                    }
+                }
+                
+        }
     }
     
     protected static function installSignal()
@@ -210,7 +298,6 @@ class Worker
     {
         self::$masterPid = posix_getpid();
         // 保存到文件中，用于实现停止、重启
-        self::$pidFile = empty(self::$pidFile) ? sys_get_temp_dir()."/workerman.".fileinode(__FILE__).".pid" : self::$pidFile;
         if(false === @file_put_contents(self::$pidFile, self::$masterPid))
         {
             throw new Exception('can not save pid to ' . self::$pidFile);
@@ -407,18 +494,16 @@ class Worker
     
     protected static function writeStatisticsToStatusFile()
     {
-        $status_file = sys_get_temp_dir().'/workerman.status';
-        
         // for master process
         if(self::$masterPid === posix_getpid())
         {
             $loadavg = sys_getloadavg();
-            file_put_contents($status_file, "---------------------------------------GLOBAL STATUS--------------------------------------------\n");
-            file_put_contents($status_file, 'Workerman version:' . Worker::VERSION . "          PHP version:".PHP_VERSION."\n", FILE_APPEND);
-            file_put_contents($status_file, 'start time:'. date('Y-m-d H:i:s', self::$_globalStatistics['start_timestamp']).'   run ' . floor((time()-self::$_globalStatistics['start_timestamp'])/(24*60*60)). ' days ' . floor(((time()-self::$_globalStatistics['start_timestamp'])%(24*60*60))/(60*60)) . " hours   \n", FILE_APPEND);
-            file_put_contents($status_file, 'load average: ' . implode(", ", $loadavg) . "\n", FILE_APPEND);
-            file_put_contents($status_file,  count(self::$_pidMap) . ' workers       ' . count(self::getAllWorkerPids())." processes\n", FILE_APPEND);
-            file_put_contents($status_file, str_pad('worker_name', self::$_maxWorkerNameLength) . " exit_status     exit_count\n", FILE_APPEND);
+            file_put_contents(self::$_statisticsFile, "---------------------------------------GLOBAL STATUS--------------------------------------------\n");
+            file_put_contents(self::$_statisticsFile, 'Workerman version:' . Worker::VERSION . "          PHP version:".PHP_VERSION."\n", FILE_APPEND);
+            file_put_contents(self::$_statisticsFile, 'start time:'. date('Y-m-d H:i:s', self::$_globalStatistics['start_timestamp']).'   run ' . floor((time()-self::$_globalStatistics['start_timestamp'])/(24*60*60)). ' days ' . floor(((time()-self::$_globalStatistics['start_timestamp'])%(24*60*60))/(60*60)) . " hours   \n", FILE_APPEND);
+            file_put_contents(self::$_statisticsFile, 'load average: ' . implode(", ", $loadavg) . "\n", FILE_APPEND);
+            file_put_contents(self::$_statisticsFile,  count(self::$_pidMap) . ' workers       ' . count(self::getAllWorkerPids())." processes\n", FILE_APPEND);
+            file_put_contents(self::$_statisticsFile, str_pad('worker_name', self::$_maxWorkerNameLength) . " exit_status     exit_count\n", FILE_APPEND);
             foreach(self::$_pidMap as $socket_name =>$worker_pid_array)
             {
                 $worker = self::$_workers[$socket_name];
@@ -426,16 +511,16 @@ class Worker
                 {
                     foreach(self::$_globalStatistics['worker_exit_info'][$socket_name] as $worker_exit_status=>$worker_exit_count)
                     {
-                        file_put_contents($status_file, str_pad($worker->name, self::$_maxWorkerNameLength) . " " . str_pad($worker_exit_status, 16). " $worker_exit_count\n", FILE_APPEND);
+                        file_put_contents(self::$_statisticsFile, str_pad($worker->name, self::$_maxWorkerNameLength) . " " . str_pad($worker_exit_status, 16). " $worker_exit_count\n", FILE_APPEND);
                     }
                 }
                 else
                 {
-                    file_put_contents($status_file, str_pad($worker->name, self::$_maxWorkerNameLength) . " " . str_pad(0, 16). " 0\n", FILE_APPEND);
+                    file_put_contents(self::$_statisticsFile, str_pad($worker->name, self::$_maxWorkerNameLength) . " " . str_pad(0, 16). " 0\n", FILE_APPEND);
                 }
             }
-            file_put_contents($status_file,  "---------------------------------------PROCESS STATUS-------------------------------------------\n", FILE_APPEND);
-            file_put_contents($status_file, "pid\tmemory  ".str_pad('listening', 20)." timestamp  ".str_pad('worker_name', self::$_maxWorkerNameLength)." ".str_pad('total_request', 13)." ".str_pad('send_fail', 9)." ".str_pad('throw_exception', 15)."\n", FILE_APPEND);
+            file_put_contents(self::$_statisticsFile,  "---------------------------------------PROCESS STATUS-------------------------------------------\n", FILE_APPEND);
+            file_put_contents(self::$_statisticsFile, "pid\tmemory  ".str_pad('listening', 20)." timestamp  ".str_pad('worker_name', self::$_maxWorkerNameLength)." ".str_pad('total_request', 13)." ".str_pad('send_fail', 9)." ".str_pad('throw_exception', 15)."\n", FILE_APPEND);
             
             foreach(self::getAllWorkerPids() as $worker_pid)
             {
@@ -448,7 +533,7 @@ class Worker
         $worker = current(self::$_workers);
         $wrker_status_str = posix_getpid()."\t".str_pad(round(memory_get_usage()/(1024*1024),2)."M", 7)." " .str_pad($worker->getSocketName(), 20) ." ". self::$workerStatistics['start_timestamp'] ." ".str_pad(($worker->name == $worker->getSocketName() ? 'none' : $worker->name), self::$_maxWorkerNameLength)." ";
         $wrker_status_str .=  str_pad(self::$workerStatistics['total_request'], 14)." ".str_pad(self::$workerStatistics['send_fail'],9)." ".str_pad(self::$workerStatistics['throw_exception'],15)."\n";
-        file_put_contents($status_file, $wrker_status_str, FILE_APPEND);
+        file_put_contents(self::$_statisticsFile, $wrker_status_str, FILE_APPEND);
     }
     
     public function __construct($socket_name)
