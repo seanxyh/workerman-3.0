@@ -112,6 +112,7 @@ class Worker
      */
     public static function parseCommand()
     {
+        global $argv;
         $start_file = $argv[0]; 
         if(!isset($argv[1]))
         {
