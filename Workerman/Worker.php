@@ -85,6 +85,7 @@ class Worker
     public static function runAll()
     {
         self::init();
+        self::parseCommand();
         self::daemonize();
         self::installSignal();
         self::resetStd();
@@ -180,7 +181,7 @@ class Worker
                         exit(0);
                     }
                 }
-                
+                break;
         }
     }
     
