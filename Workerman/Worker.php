@@ -20,7 +20,7 @@ use \Exception;
  */
 class Worker 
 {
-    const VERSION = 3.0;
+    const VERSION = '3.0.0';
     
     const STATUS_STARTING = 1;
     
@@ -118,44 +118,46 @@ class Worker
         {
             exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
         }
+        
         $command = trim($argv[1]);
+        
+        $master_pid = @file_get_contents(self::$pidFile);
+        $master_is_alive = $master_pid && @posix_kill($master_pid, 0);
+        if($master_is_alive)
+        {
+            if($command === 'start')
+            {
+                exit("Workerman[$start_file] is running\n");
+            }
+        }
+        elseif($command !== 'start')
+        {
+            exit("Workerman[$start_file] not run\n");
+        }
+        
         switch($command)
         {
+            // start workerman
             case 'start':
                 break;
+            // show status of workerman
             case 'status':
+                // try to delete the statistics file , avoid read dirty data
+                if(is_file(self::$_statisticsFile))
+                {
+                    @unlink(self::$_statisticsFile);
+                }
+                // send SIGUSR2 to master process ,then master process will send SIGUSR2 to all children processes
+                // all processes will write statistics data to statistics file
+                posix_kill($master_pid, SIGUSR2);
+                // wait all processes wirte statistics data
+                usleep(100000);
+                // display statistics file
+                readfile(self::$_statisticsFile);
+                exit(0);
             case 'restart':
             case 'stop':
-                if(!is_file(self::$pidFile))
-                {
-                    exit("$start_file not run\n");
-                }
-                $master_pid = @file_get_contents(self::$pidFile);
-                $master_is_alive = @posix_kill($master_pid, 0);
-                if(!$master_is_alive)
-                {
-                    exit("$start_file not run\n");
-                }
-                
-                // show status of workerman
-                if($command === 'status')
-                {
-                    // try to delete the statistics file , avoid read dirty data
-                    if(is_file(self::$_statisticsFile))
-                    {
-                        @unlink(self::$_statisticsFile);
-                    }
-                    // send SIGUSR2 to master process ,then master process will send SIGUSR2 to all children processes
-                    // all processes will write statistics data to statistics file
-                    posix_kill($master_pid, SIGUSR2);
-                    // wait all processes wirte statistics data
-                    usleep(100000);
-                    // display statistics file
-                    readfile(self::$_statisticsFile);
-                    exit(0);
-                }
-                
-                echo "Stopping Workerman[$start_file] ...";
+                echo "Stopping Workerman[$start_file] ...\n";
                 // send SIGINT to master process, master process will stop all children process and exit
                 posix_kill($master_pid, SIGINT);
                 // if $timeout seconds master process not exit then dispaly stop failure
@@ -183,6 +185,12 @@ class Worker
                     }
                 }
                 break;
+            case 'reload':
+                posix_kill($master_pid, SIGUSR1);
+                echo "Workerman[$start_file] reload\n";
+                exit(0);
+            default :
+                 exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
         }
     }
     
