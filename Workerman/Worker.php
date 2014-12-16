@@ -540,15 +540,19 @@ class Worker
     
     public function __construct($socket_name)
     {
-        $this->_mainSocket = stream_socket_server($socket_name, $errno, $errmsg);
-        if(!$this->_mainSocket)
+        global $argv;
+        if(!isset($argv[1]) || $argv[1] === 'start')
         {
-            throw new Exception($errmsg);
+            $this->_mainSocket = stream_socket_server($socket_name, $errno, $errmsg);
+            if(!$this->_mainSocket)
+            {
+                throw new Exception($errmsg);
+            }
+            stream_set_blocking($this->_mainSocket, 0);
+            $this->_socketName = $socket_name;
+            self::$_workers[$this->_socketName] = $this;
+            self::$_pidMap[$this->_socketName] = array();
         }
-        stream_set_blocking($this->_mainSocket, 0);
-        $this->_socketName = $socket_name;
-        self::$_workers[$this->_socketName] = $this;
-        self::$_pidMap[$this->_socketName] = array();
     }
     
     public function getSocketName()
