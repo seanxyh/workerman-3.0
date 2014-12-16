@@ -458,6 +458,7 @@ class Worker
         {
             throw new Exception($errmsg);
         }
+        stream_set_blocking($this->_mainSocket, 0);
         $this->_socketName = $socket_name;
         self::$_workers[$this->_socketName] = $this;
         self::$_pidMap[$this->_socketName] = array();
