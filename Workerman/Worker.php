@@ -436,25 +436,34 @@ class Worker
     
     protected static function reload()
     {
-        // set status
-        if(self::$_status !== self::STATUS_RELOADING && self::$_status !== self::STATUS_SHUTDOWN)
+        // for master process
+        if(self::$masterPid === posix_getpid())
         {
-            echo "Workerman reloading\n";
-            self::$_status = self::STATUS_RELOADING;
-        }
-        // reload complete
-        if(empty(self::$_pidsToRestart))
-        {
-            if(self::$_status !== self::STATUS_SHUTDOWN)
+            // set status
+            if(self::$_status !== self::STATUS_RELOADING && self::$_status !== self::STATUS_SHUTDOWN)
             {
-                self::$_status = self::STATUS_RUNNING;
+                echo "Workerman reloading\n";
+                self::$_status = self::STATUS_RELOADING;
             }
-            return;
+            // reload complete
+            if(empty(self::$_pidsToRestart))
+            {
+                if(self::$_status !== self::STATUS_SHUTDOWN)
+                {
+                    self::$_status = self::STATUS_RUNNING;
+                }
+                return;
+            }
+            // continue reload
+            $one_worker_pid = current(self::$_pidsToRestart );
+            posix_kill($one_worker_pid, SIGUSR1);
+            Timer::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($one_worker_pid, SIGKILL), false);
         }
-        // continue reload
-        $one_worker_pid = current(self::$_pidsToRestart );
-        posix_kill($one_worker_pid, SIGUSR1);
-        Timer::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($one_worker_pid, SIGKILL), false);
+        // for children process
+        else
+        {
+            self::stopAll();
+        }
     } 
     
     protected static function stopAll()
