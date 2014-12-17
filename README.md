@@ -29,4 +29,5 @@ $worker->onClose = function($connection)
 $worker->run();
 ```
 
-run php test.php
+run width
+php test.php start
