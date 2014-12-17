@@ -108,7 +108,7 @@ class Worker
         Timer::init();
     }
     /**
-     * php yourfile.php start | stop | restart | reload | status
+     * php yourfile.php start | stop | reload | status
      */
     public static function parseCommand()
     {
@@ -155,7 +155,6 @@ class Worker
                 // display statistics file
                 readfile(self::$_statisticsFile);
                 exit(0);
-            case 'restart':
             case 'stop':
                 echo "Stopping Workerman[$start_file] ...\n";
                 // send SIGINT to master process, master process will stop all children process and exit
@@ -190,7 +189,7 @@ class Worker
                 echo "Workerman[$start_file] reload\n";
                 exit(0);
             default :
-                 exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
+                 exit("Usage: php yourfile.php {start|stop|reload|status}\n");
         }
     }
     
