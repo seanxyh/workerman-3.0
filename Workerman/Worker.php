@@ -87,6 +87,7 @@ class Worker
         self::init();
         self::parseCommand();
         self::daemonize();
+        self::initWorkers();
         self::installSignal();
         self::resetStd();
         self::saveMasterPid();
@@ -106,7 +107,6 @@ class Worker
         self::$_globalStatistics['start_timestamp'] = time();
         self::$_statisticsFile = sys_get_temp_dir().'/workerman.status';
         Timer::init();
-        self::initWorkers();
     }
     
     protected static function initWorkers()
@@ -124,10 +124,6 @@ class Worker
             {
                 self::$_maxWorkerNameLength = $worker_name_length;
             }
-        }
-        
-        foreach (self::$_workers as $socket_name=>$worker)
-        {
             $worker->listen();
         }
     }
