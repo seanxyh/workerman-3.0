@@ -204,6 +204,7 @@ class Worker
                     {
                         exit(0);
                     }
+                    break;
                 }
                 break;
             case 'reload':
