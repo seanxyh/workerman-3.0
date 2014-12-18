@@ -106,7 +106,32 @@ class Worker
         self::$_globalStatistics['start_timestamp'] = time();
         self::$_statisticsFile = sys_get_temp_dir().'/workerman.status';
         Timer::init();
+        self::initWorkers();
     }
+    
+    protected static function initWorkers()
+    {
+        foreach(self::$_workers as $socket_name=>$worker)
+        {
+            // if worker->name not set then use worker->_socketName as worker->name
+            if(empty($worker->name))
+            {
+                $worker->name = $worker->getSocketName();;
+            }
+            // get the max length of worker->name for formating status info
+            $worker_name_length = strlen($worker->name);
+            if(self::$_maxWorkerNameLength < $worker_name_length)
+            {
+                self::$_maxWorkerNameLength = $worker_name_length;
+            }
+        }
+        
+        foreach (self::$_workers as $socket_name=>$worker)
+        {
+            $worker->listen();
+        }
+    }
+    
     /**
      * php yourfile.php start | stop | reload | status
      */
@@ -155,6 +180,7 @@ class Worker
                 // display statistics file
                 readfile(self::$_statisticsFile);
                 exit(0);
+            case 'restart':
             case 'stop':
                 echo "Stopping Workerman[$start_file] ...\n";
                 // send SIGINT to master process, master process will stop all children process and exit
@@ -556,19 +582,9 @@ class Worker
     
     public function __construct($socket_name)
     {
-        global $argv;
-        if(!isset($argv[1]) || $argv[1] === 'start')
-        {
-            $this->_mainSocket = stream_socket_server($socket_name, $errno, $errmsg);
-            if(!$this->_mainSocket)
-            {
-                throw new Exception($errmsg);
-            }
-            stream_set_blocking($this->_mainSocket, 0);
-            $this->_socketName = $socket_name;
-            self::$_workers[$this->_socketName] = $this;
-            self::$_pidMap[$this->_socketName] = array();
-        }
+        $this->_socketName = $socket_name;
+        self::$_workers[$this->_socketName] = $this;
+        self::$_pidMap[$this->_socketName] = array();
     }
     
     public function getSocketName()
@@ -630,5 +646,16 @@ class Worker
                 echo $e;
             }
         }
+    }
+    
+    protected function listen()
+    {
+        echo $this->_socketName."\n";
+        $this->_mainSocket = stream_socket_server($this->_socketName, $errno, $errmsg);
+        if(!$this->_mainSocket)
+        {
+            throw new Exception($errmsg);
+        }
+        stream_set_blocking($this->_mainSocket, 0);
     }
 }
