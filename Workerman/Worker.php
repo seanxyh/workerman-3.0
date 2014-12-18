@@ -212,7 +212,7 @@ class Worker
                 echo "Workerman[$start_file] reload\n";
                 exit(0);
             default :
-                 exit("Usage: php yourfile.php {start|stop|reload|status}\n");
+                 exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
         }
     }
     
