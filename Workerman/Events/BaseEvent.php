@@ -4,25 +4,25 @@ namespace Workerman\Events;
 interface BaseEvent
 {
     /**
-     * 数据可读事件
-     * @var integer
+     * read event
+     * @var int
      */
     const EV_READ = 1;
     
     /**
-     * 数据可写事件
-     * @var integer
+     * write event
+     * @var int
      */
     const EV_WRITE = 2;
     
     /**
-     * 信号事件
-     * @var integer
+     * signal
+     * @var int
      */
     const EV_SIGNAL = 4;
     
     /**
-     * 事件添加
+     * add 
      * @param resource $fd
      * @param int $flag
      * @param callable $func
@@ -31,7 +31,7 @@ interface BaseEvent
     public function add($fd, $flag, $func);
     
     /**
-     * 事件删除
+     * del
      * @param resource $fd
      * @param int $flag
      * @return bool
@@ -39,7 +39,7 @@ interface BaseEvent
     public function del($fd, $flag);
     
     /**
-     * 轮询
+     * loop
      * @return void
      */
     public function loop();

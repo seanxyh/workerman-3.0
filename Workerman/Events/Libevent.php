@@ -1,33 +1,31 @@
 <?php 
 namespace Workerman\Events;
 /**
- * 
- * libevent事件轮询库的封装
- * 
+ * libevent
  * @author walkor <walkor@workerman.net>
  */
 class Libevent implements BaseEvent
 {
     /**
-     * eventBase实例
+     * eventBase
      * @var object
      */
     protected $eventBase = null;
     
     /**
-     * 记录所有监听事件 
+     * all events
      * @var array
      */
     protected $allEvents = array();
     
     /**
-     * 记录信号回调函数
+     * all signal events
      * @var array
      */
     protected $eventSignal = array();
     
     /**
-     * 初始化eventBase
+     * create event base
      * @return void
      */
     public function __construct()
@@ -46,19 +44,15 @@ class Libevent implements BaseEvent
         if ($flag == self::EV_SIGNAL)
         {
             $real_flag = EV_SIGNAL | EV_PERSIST;
-            // 创建一个用于监听的event
             $this->_eventSignal[$fd_key] = event_new();
-            // 设置监听处理函数
             if(!event_set($this->_eventSignal[$fd_key], $fd, $real_flag, $func, null))
             {
                 return false;
             }
-            // 设置event base
             if(!event_base_set($this->_eventSignal[$fd_key], $this->_eventBase))
             {
                 return false;
             }
-            // 添加事件
             if(!event_add($this->_eventSignal[$fd_key]))
             {
                 return false;
@@ -68,22 +62,18 @@ class Libevent implements BaseEvent
         
         $real_flag = $flag == self::EV_READ ? EV_READ | EV_PERSIST : EV_WRITE | EV_PERSIST;
         
-        // 创建一个用于监听的event
         $this->_allEvents[$fd_key][$flag] = event_new();
         
-        // 设置监听处理函数
         if(!event_set($this->_allEvents[$fd_key][$flag], $fd, $real_flag, $func, null))
         {
             return false;
         }
         
-        // 设置event base
         if(!event_base_set($this->_allEvents[$fd_key][$flag], $this->_eventBase))
         {
             return false;
         }
         
-        // 添加事件
         if(!event_add($this->_allEvents[$fd_key][$flag]))
         {
             return false;
@@ -92,7 +82,7 @@ class Libevent implements BaseEvent
     }
     
     /**
-     * 删除fd的某个事件
+     * del
      * @see Events\BaseEvent::del()
      */
     public function del($fd ,$flag)
@@ -100,7 +90,6 @@ class Libevent implements BaseEvent
         $fd_key = (int)$fd;
         switch($flag)
         {
-            // 读事件
             case BaseEvent::EV_READ:
             case BaseEvent::EV_WRITE:
                 if(isset($this->_allEvents[$fd_key][$flag]))
@@ -123,7 +112,7 @@ class Libevent implements BaseEvent
     }
 
     /**
-     * 轮训主循环
+     * loop
      * @see BaseEvent::loop()
      */
     public function loop()

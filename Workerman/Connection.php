@@ -6,34 +6,95 @@ use Workerman\Events\BaseEvent;
 use Workerman\Worker;
 use \Exception;
 
+/**
+ * connection 
+ * @author walkor<walkor@workerman.net>
+ */
 class Connection
 {
+    /**
+     * when recv data from client ,how much bytes to read
+     * @var unknown_type
+     */
     const READ_BUFFER_SIZE = 8192;
 
+    /**
+     * connection status connecting
+     * @var int
+     */
     const STATUS_CONNECTING = 1;
     
+    /**
+     * connection status establish
+     * @var int
+     */
     const STATUS_ESTABLISH = 2;
 
+    /**
+     * connection status closing
+     * @var int
+     */
     const STATUS_CLOSING = 4;
     
+    /**
+     * connection status closed
+     * @var int
+     */
     const STATUS_CLOSED = 8;
     
+    /**
+     * connction id
+     * @var int
+     */
     protected $_connectionId = 0;
     
+    /**
+     * worker
+     * @var Worker
+     */
     protected $_owner = null;
     
+    /**
+     * the socket
+     * @var resource
+     */
     protected $_socket = null;
 
+    /**
+     * the buffer to send
+     * @var string
+     */
     protected $_sendBuffer = '';
 
+    /**
+     * connection status
+     * @var int
+     */
     protected $_status = self::STATUS_ESTABLISH;
     
+    /**
+     * remote ip
+     * @var string
+     */
     protected $_remoteIp = '';
     
+    /**
+     * remote port
+     * @var int
+     */
     protected $_remotePort = 0;
     
+    /**
+     * remote address
+     * @var string
+     */
     protected $_remoteAddress = '';
 
+    /**
+     * create a connection
+     * @param Worker $owner
+     * @param resource $socket
+     */
     public function __construct($owner, $socket)
     {
         $this->_owner = $owner;
@@ -42,6 +103,11 @@ class Connection
         Worker::$globalEvent->add($this->_socket, BaseEvent::EV_READ, array($this, 'baseRead'));
     }
     
+    /**
+     * send buffer to client
+     * @param string $send_buffer
+     * @return void|boolean
+     */
     public function send($send_buffer)
     {
         if($this->_sendBuffer === '')
@@ -73,6 +139,10 @@ class Connection
         }
     }
     
+    /**
+     * get remote ip
+     * @return string
+     */
     public function getRemoteIp()
     {
         if(!$this->_remoteIp)
@@ -85,6 +155,9 @@ class Connection
         return $this->_remoteIp;
     }
     
+    /**
+     * get remote port
+     */
     public function getRemotePort()
     {
         if(!$this->_remotePort)
@@ -97,6 +170,11 @@ class Connection
         return $this->_remotePort;
     }
 
+    /**
+     * when socket is readable 
+     * @param resource $socket
+     * @return void
+     */
     public function baseRead($socket)
     {
        $recv_buffer = '';
@@ -126,6 +204,10 @@ class Connection
        }
     }
 
+    /**
+     * when socket is writeable
+     * @return void
+     */
     public function baseWrite()
     {
         $len = fwrite($this->_socket, $this->_sendBuffer);
@@ -153,6 +235,10 @@ class Connection
         }
     }
 
+    /**
+     * close the connection
+     * @void
+     */
     public function close()
     {
         $this->_status = self::STATUS_CLOSING;
@@ -162,6 +248,10 @@ class Connection
         }
     }
 
+    /**
+     * shutdown the connection
+     * @void
+     */
     public function shutdown()
     {
        if($this->_owner->onClose)

@@ -20,68 +20,187 @@ use \Exception;
  */
 class Worker 
 {
+    /**
+     * workerman version
+     * @var string
+     */
     const VERSION = '3.0.0';
     
+    /**
+     * status starting
+     * @var int
+     */
     const STATUS_STARTING = 1;
     
+    /**
+     * status running
+     * @var int
+     */
     const STATUS_RUNNING = 2;
     
+    /**
+     * status shutdown
+     * @var int
+     */
     const STATUS_SHUTDOWN = 4;
     
+    /**
+     * status reloading
+     * @var int
+     */
     const STATUS_RELOADING = 8;
     
+    /**
+     * after KILL_WORKER_TIMER_TIME seconds if worker not quit
+     * then send signalkill to the worker
+     * @var int
+     */
     const KILL_WORKER_TIMER_TIME = 1;
     
+    /**
+     * worker name for marking process
+     * @var string
+     */
     public $name = '';
     
+    /**
+     * when client connect worker, which function will be run
+     * @var callback
+     */
     public $onConnect = null;
     
+    /**
+     * when worker recv data, which function will be run
+     * @var callback
+     */
     public $onMessage = null;
     
+    /**
+     * when connection closed, which function will be run
+     * @var callback
+     */
     public $onClose = null;
     
+    /**
+     * how many processes will be created for the current worker
+     * @var unknown_type
+     */
     public $count = 1;
     
+    /**
+     * the connections of client
+     * @var array
+     */
     public $connections = array();
     
-    protected static $masterPid = 0;
-    
-    protected $_mainSocket = null;
-    
-    protected $_socketName = '';
-    
+    /**
+     * if run as daemon
+     * @var bool
+     */
     public static $daemonize = false;
     
+    /**
+     * all output buffer (echo var_dump etc) will write to the file 
+     * @var string
+     */
     public static $stdoutFile = '/dev/null';
     
+    /**
+     * master process pid
+     * @var int
+     */
+    public static $masterPid = 0;
+    
+    /**
+     * pid file
+     * @var string
+     */
     public static $pidFile = '';
     
+    /**
+     * event loop
+     * @var Select/Libevent
+     */
     public static $globalEvent = null;
-
+    
+    /**
+     * stream socket of the worker
+     * @var stream
+     */
+    protected $_mainSocket = null;
+    
+    /**
+     * socket name example tcp://0.0.0.0:80
+     * @var string
+     */
+    protected $_socketName = '';
+    
+    /**
+     * all instances of worker
+     * @var array
+     */
     protected static $_workers = array();
     
+    /**
+     * all workers and pids
+     * @var array
+     */
     protected static $_pidMap = array();
     
+    /**
+     * all processes to be restart
+     * @var array
+     */
     protected static $_pidsToRestart = array();
     
+    /**
+     * current status
+     * @var int
+     */
     protected static $_status = self::STATUS_STARTING;
     
+    /**
+     * max length of $_workerName
+     * @var int
+     */
     protected static $_maxWorkerNameLength = 12;
     
+    /**
+     * max length of $_socketName
+     * @var unknown_type
+     */
+    protected static $_maxSocketNameLength = 12;
+    
+    /**
+     * the path of status file, witch will store status of processes
+     * @var string
+     */
     protected static $_statisticsFile = '';
     
+    /**
+     * global statistics
+     * @var array
+     */
     protected static $_globalStatistics = array(
         'start_timestamp' => 0,
         'worker_exit_info' => array()
     );
     
+    /**
+     * worker statistics
+     * @var array
+     */
     public static $workerStatistics = array(
-        'start_timestamp'      => 0, // 该进程开始时间戳
-        'total_request'   => 0, // 该进程处理的总请求数
-        'throw_exception' => 0, // 该进程逻辑处理时收到异常的总数
-        'send_fail'       => 0, // 发送数据给客户端失败总数
+        'start_timestamp'      => 0, 
+        'total_request'   => 0, 
+        'throw_exception' => 0,
+        'send_fail'       => 0,
     );
     
+    /**
+     * run all workers
+     * @return void
+     */
     public static function runAll()
     {
         self::init();
@@ -91,10 +210,14 @@ class Worker
         self::installSignal();
         self::resetStd();
         self::saveMasterPid();
-        self::createWorkers();
+        self::forkWorkers();
         self::monitorWorkers();
     }
     
+    /**
+     * initialize the environment variables 
+     * @return void
+     */
     public static function init()
     {
         if(empty(self::$pidFile))
@@ -109,6 +232,10 @@ class Worker
         Timer::init();
     }
     
+    /**
+     * initialize the all the workers
+     * @return void
+     */
     protected static function initWorkers()
     {
         foreach(self::$_workers as $socket_name=>$worker)
@@ -124,15 +251,28 @@ class Worker
             {
                 self::$_maxWorkerNameLength = $worker_name_length;
             }
+            // get the max length of worker->_socketName
+            $socket_name_length = strlen($worker->getSocketName());
+            if(self::$_maxSocketNameLength < $socket_name_length)
+            {
+                self::$_maxSocketNameLength = $socket_name_length;
+            }
+        }
+        
+        // create stream sockets 
+        foreach(self::$_workers as $worker)
+        {
             $worker->listen();
         }
     }
     
     /**
-     * php yourfile.php start | stop | reload | status
+     * php yourfile.php start | stop | restart | reload | status
+     * @return void
      */
     public static function parseCommand()
     {
+        // check command
         global $argv;
         $start_file = $argv[0]; 
         if(!isset($argv[1]))
@@ -142,6 +282,7 @@ class Worker
         
         $command = trim($argv[1]);
         
+        // check if master process is running
         $master_pid = @file_get_contents(self::$pidFile);
         $master_is_alive = $master_pid && @posix_kill($master_pid, 0);
         if($master_is_alive)
@@ -151,7 +292,7 @@ class Worker
                 exit("Workerman[$start_file] is running\n");
             }
         }
-        elseif($command !== 'start')
+        elseif($command !== 'start' && $command !== 'restart')
         {
             exit("Workerman[$start_file] not run\n");
         }
@@ -176,9 +317,11 @@ class Worker
                 // display statistics file
                 readfile(self::$_statisticsFile);
                 exit(0);
+            // restart workerman
             case 'restart':
+            // stop workeran
             case 'stop':
-                echo "Stopping Workerman[$start_file] ...\n";
+                echo "Workerman[$start_file] is stoping ...\n";
                 // send SIGINT to master process, master process will stop all children process and exit
                 posix_kill($master_pid, SIGINT);
                 // if $timeout seconds master process not exit then dispaly stop failure
@@ -207,15 +350,21 @@ class Worker
                     break;
                 }
                 break;
+            // reload workerman
             case 'reload':
                 posix_kill($master_pid, SIGUSR1);
                 echo "Workerman[$start_file] reload\n";
                 exit(0);
+            // unknow command
             default :
                  exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
         }
     }
     
+    /**
+     * installs signal handlers for master
+     * @return void
+     */
     protected static function installSignal()
     {
         // stop
@@ -228,6 +377,10 @@ class Worker
         pcntl_signal(SIGPIPE, SIG_IGN, false);
     }
     
+    /**
+     * reinstall signal handlers for workers
+     * @return void
+     */
     protected static function reinstallSignal()
     {
         // uninstall stop signal handler
@@ -244,6 +397,10 @@ class Worker
         self::$globalEvent->add(SIGUSR2, BaseEvent::EV_SIGNAL, array('\Workerman\Worker', 'signalHandler'));
     }
     
+    /**
+     * signal handler
+     * @param int $signal
+     */
     public static function signalHandler($signal)
     {
         switch($signal)
@@ -264,46 +421,46 @@ class Worker
         }
     }
 
+    /**
+     * run workerman as daemon
+     * @throws Exception
+     */
     protected static function daemonize()
     {
         if(!self::$daemonize)
         {
             return;
         }
-         // 设置umask
         umask(0);
-        // fork一次
         $pid = pcntl_fork();
         if(-1 == $pid)
         {
-            // 出错退出
             throw new Exception('fork fail');
         }
         elseif($pid > 0)
         {
-            // 父进程，退出
             exit(0);
         }
-        // 成为session leader
         if(-1 == posix_setsid())
         {
-            // 出错退出
             throw new Exception("setsid fail");
         }
-        // 再fork一次，防止在符合SVR4标准的系统下进程再次获得终端
+        // fork again avoid SVR4 system regain the control of terminal
         $pid = pcntl_fork();
         if(-1 == $pid)
         {
-            // 出错退出
             throw new Exception("fork fail");
         }
         elseif(0 !== $pid)
         {
-            // 禁止进程重新打开控制终端
             exit(0);
         }
     }
 
+    /**
+     * redirecting output
+     * @throws Exception
+     */
     protected static function resetStd()
     {
         if(!self::$daemonize)
@@ -326,6 +483,10 @@ class Worker
         }
     }
     
+    /**
+     * save the pid of master for later stop/reload/restart/status command
+     * @throws Exception
+     */
     protected static function saveMasterPid()
     {
         self::$masterPid = posix_getpid();
@@ -336,6 +497,10 @@ class Worker
         }
     }
     
+    /**
+     * get all pids of workers
+     * @return array
+     */
     protected static function getAllWorkerPids()
     {
         $pid_array = array(); 
@@ -349,7 +514,11 @@ class Worker
         return $pid_array;
     }
 
-    protected static function createWorkers()
+    /**
+     * fork worker processes
+     * @return void
+     */
+    protected static function forkWorkers()
     {
         foreach(self::$_workers as $socket_name=>$worker)
         {
@@ -377,6 +546,11 @@ class Worker
         }
     }
 
+    /**
+     * fork one worker and run it
+     * @param Worker $worker
+     * @throws Exception
+     */
     protected static function forkOneWorker($worker)
     {
         $pid = pcntl_fork();
@@ -398,13 +572,18 @@ class Worker
         }
     }
 
+    /**
+     * wait for the child process exit
+     * @return void
+     */
     protected static function monitorWorkers()
     {
         self::$_status = self::STATUS_RUNNING;
         while(1)
         {
-            $status = 0;
+            // calls signal handlers for pending signals
             pcntl_signal_dispatch();
+            // suspends execution of the current process until a child has exited or  a signal is delivered
             $pid = pcntl_wait($status, WUNTRACED);
             if($pid > 0)
             {
@@ -438,12 +617,14 @@ class Worker
                         break;
                     }
                 }
+                // workerman is still running
                 if(self::$_status !== self::STATUS_SHUTDOWN)
                 {
-                    self::createWorkers();
+                    self::forkWorkers();
                 }
                 else
                 {
+                    // workerman is shuting down
                     $all_worker_pids = self::getAllWorkerPids();
                     if(empty($all_worker_pids))
                     {
@@ -456,6 +637,10 @@ class Worker
         }
     }
     
+    /**
+     * reload workerman, gracefully restart child processes one by one
+     * @return void
+     */
     protected static function reload()
     {
         // for master process
@@ -488,6 +673,10 @@ class Worker
         }
     } 
     
+    /**
+     * stop all workers
+     * @return void
+     */
     protected static function stopAll()
     {
         self::$_status = self::STATUS_SHUTDOWN;
@@ -516,6 +705,10 @@ class Worker
         }
     }
     
+    /**
+     * if all work has been done
+     * @return boolean
+     */
     public static function allWorkHasBeenDone()
     {
         foreach(self::$_workers as $worker)
@@ -528,11 +721,19 @@ class Worker
         return true;
     }
     
+    /**
+     * if worker status is self::STATUS_SHUTDOWN
+     * @return boolean
+     */
     public static function isStopingAll()
     {
         return self::$_status === self::STATUS_SHUTDOWN;
     }
     
+    /**
+     * for workermand status command
+     * @return void
+     */
     protected static function writeStatisticsToStatusFile()
     {
         // for master process
@@ -577,6 +778,11 @@ class Worker
         file_put_contents(self::$_statisticsFile, $wrker_status_str, FILE_APPEND);
     }
     
+    /**
+     * create a worker
+     * @param string $socket_name
+     * @return void
+     */
     public function __construct($socket_name)
     {
         $this->_socketName = $socket_name;
@@ -584,11 +790,33 @@ class Worker
         self::$_pidMap[$this->_socketName] = array();
     }
     
+    /**
+     * listen and bind socket
+     * @throws Exception
+     */
+    public function listen()
+    {
+        $this->_mainSocket = stream_socket_server($this->_socketName, $errno, $errmsg);
+        if(!$this->_mainSocket)
+        {
+            throw new Exception($errmsg);
+        }
+        stream_set_blocking($this->_mainSocket, 0);
+        echo $this->_socketName."\n";
+    }
+    
+    /**
+     * get socket name
+     * @return string
+     */
     public function getSocketName()
     {
         return $this->_socketName;
     }
     
+    /**
+     * run the current worker
+     */
     public function run()
     {
         if(!self::$globalEvent)
@@ -608,6 +836,10 @@ class Worker
         self::$globalEvent->loop();
     }
     
+    /**
+     * stop the current worker
+     * @return void
+     */
     public function stop()
     {
         self::$globalEvent->del($this->_mainSocket, BaseEvent::EV_READ);
@@ -620,6 +852,11 @@ class Worker
         }
     }
 
+    /**
+     * accept a connection of client
+     * @param resources $socket
+     * @return void
+     */
     public function accept($socket)
     {
         $new_socket = @stream_socket_accept($socket, 0);
@@ -643,16 +880,5 @@ class Worker
                 echo $e;
             }
         }
-    }
-    
-    protected function listen()
-    {
-        echo $this->_socketName."\n";
-        $this->_mainSocket = stream_socket_server($this->_socketName, $errno, $errmsg);
-        if(!$this->_mainSocket)
-        {
-            throw new Exception($errmsg);
-        }
-        stream_set_blocking($this->_mainSocket, 0);
     }
 }

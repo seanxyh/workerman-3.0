@@ -4,31 +4,31 @@ namespace Workerman\Events;
 class Select implements BaseEvent
 {
     /**
-     * 记录所有事件处理函数及参数
+     * all events
      * @var array
      */
     public $_allEvents = array();
     
     /**
-     * 记录所有信号处理函数及参数
+     * all signal events
      * @var array
      */
     public $_signalEvents = array();
     
     /**
-     * 监听的读描述符
+     * read fds
      * @var array
      */
     protected $_readFds = array();
     
     /**
-     * 监听的写描述符
+     * write fds
      * @var array
      */
     protected $_writeFds = array();
     
     /**
-     * 添加事件
+     * add
      * @see Events\BaseEvent::add()
      */
     public function add($fd, $flag, $func)
@@ -37,17 +37,14 @@ class Select implements BaseEvent
         $fd_key = (int)$fd;
         switch ($flag)
         {
-            // 可读事件
             case self::EV_READ:
                 $this->_allEvents[$fd_key][$flag] = array($func, $fd);
                 $this->_readFds[$fd_key] = $fd;
                 break;
-            // 写事件 目前没用到，未实现
             case self::EV_WRITE:
                 $this->_allEvents[$fd_key][$flag] = array($func, $fd);
                 $this->_writeFds[$fd_key] = $fd;
                 break;
-            // 信号处理事件
             case self::EV_SIGNAL:
                 $this->_signalEvents[$fd_key][$flag] = array($func, $fd);
                 function_exists('pcntl_signal') && pcntl_signal($fd, array($this, 'signalHandler'));
@@ -58,7 +55,7 @@ class Select implements BaseEvent
     }
     
     /**
-     * 回调信号处理函数
+     * signal handler
      * @param int $signal
      */
     public function signalHandler($signal)
@@ -67,7 +64,7 @@ class Select implements BaseEvent
     }
     
     /**
-     * 删除某个fd的某个事件
+     * del
      * @see Events\BaseEvent::del()
      */
     public function del($fd ,$flag)
@@ -75,7 +72,6 @@ class Select implements BaseEvent
         $fd_key = (int)$fd;
         switch ($flag)
         {
-            // 可读事件
             case self::EV_READ:
                 unset($this->_allEvents[$fd_key][$flag], $this->_readFds[$fd_key]);
                 if(empty($this->_allEvents[$fd_key]))
@@ -83,7 +79,6 @@ class Select implements BaseEvent
                     unset($this->_allEvents[$fd_key]);
                 }
                 break;
-            // 可写事件
             case self::EV_WRITE:
                 unset($this->_allEvents[$fd_key][$flag], $this->_writeFds[$fd_key]);
                 if(empty($this->_allEvents[$fd_key]))
@@ -91,7 +86,6 @@ class Select implements BaseEvent
                     unset($this->_allEvents[$fd_key]);
                 }
                 break;
-            // 信号
             case self::EV_SIGNAL:
                 unset($this->_signalEvents[$fd_key]);
                 function_exists('pcntl_signal') && pcntl_signal($fd, SIG_IGN);
@@ -121,7 +115,7 @@ class Select implements BaseEvent
                 continue;
             }
             
-            // 检查所有可读描述符
+            // read
             if($read)
             {
                 foreach($read as $fd)
@@ -134,7 +128,7 @@ class Select implements BaseEvent
                 }
             }
             
-            // 检查可写描述符
+            // write
             if($write)
             {
                 foreach($write as $fd)

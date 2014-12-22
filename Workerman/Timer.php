@@ -4,13 +4,13 @@ use \Workerman\Events\BaseEvent;
 
 /**
  * 
- * 定时任务
+ * timer
  * 
- * <b>使用示例:</b>
+ * <b>example:</b>
  * <pre>
  * <code>
  * Workerman\Timer::init();
- * Workerman\Timer::add($time_interval, array('class', 'method'), array($arg1, $arg2..));
+ * Workerman\Timer::add($time_interval, callback, array($arg1, $arg2..));
  * <code>
  * </pre>
 * @author walkor <walkor@workerman.net>
@@ -18,7 +18,6 @@ use \Workerman\Events\BaseEvent;
 class Timer 
 {
     /**
-     * 每个任务定时时长及对应的任务（函数）
      * [
      *   run_time => [[$func, $args, $persistent, timelong],[$func, $args, $persistent, timelong],..]],
      *   run_time => [[$func, $args, $persistent, timelong],[$func, $args, $persistent, timelong],..]],
@@ -30,7 +29,7 @@ class Timer
     
     
     /**
-     * 初始化任务
+     * init
      * @return void
      */
     public static function init($event = null)
@@ -46,7 +45,7 @@ class Timer
     }
     
     /**
-     * 捕捉alarm信号
+     * signal handler
      * @return void
      */
     public static function signalHandle()
@@ -57,12 +56,10 @@ class Timer
     
     
     /**
-     * 
-     * 添加一个任务
-     * 
-     * @param int $time_interval 多长时间运行一次 单位秒
-     * @param callback $func 任务运行的函数或方法
-     * @param mix $args 任务运行的函数或方法使用的参数
+     * add a timer
+     * @param int $time_interval
+     * @param callback $func
+     * @param mix $args
      * @return void
      */
     public static function add($time_interval, $func, $args = array(), $persistent = true)
@@ -77,7 +74,6 @@ class Timer
             return false;
         }
         
-        // 有任务时才触发计时器
         if(empty(self::$tasks))
         {
             pcntl_alarm(1);
@@ -95,22 +91,20 @@ class Timer
     
     
     /**
-     * 
-     * 定时被调用，用于触发定时任务
-     * 
+     * tick
      * @return void
      */
     public static function tick()
     {
         if(empty(self::$tasks))
         {
+            pcntl_alarm(0);
             return;
         }
         
         $time_now = time();
         foreach (self::$tasks as $run_time=>$task_data)
         {
-            // 时间到了就运行一下
             if($time_now >= $run_time)
             {
                 foreach($task_data as $index=>$one_task)
@@ -127,7 +121,6 @@ class Timer
                     {
                         echo $e;
                     }
-                    // 持久的放入下一个任务队列
                     if($persistent)
                     {
                         self::add($time_interval, $task_func, $task_args);
@@ -139,10 +132,11 @@ class Timer
     }
     
     /**
-     * 删除所有的任务
+     * del all
      */
     public static function delAll()
     {
         self::$tasks = array();
+        pcntl_alarm(0);
     }
 }
