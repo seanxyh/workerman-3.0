@@ -17,7 +17,7 @@ $worker->onConnect = function($connection)
 };
 
 // when client send data to 1234 port
-$worker->onMessage = function($worker, $connection, $data)
+$worker->onMessage = function($connection, $data)
 {
     // send data to client
     $connection->send($data);
@@ -28,9 +28,3 @@ $worker->onClose = function($connection)
 {
     echo "client closed\n";
 };
-
-// run worker
-//$worker->run();
-Worker::runAll();
-
-

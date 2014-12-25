@@ -13,6 +13,16 @@ use \Exception;
 class Connection
 {
     /**
+     * statistics for status
+     * @var array
+     */
+    public static $statistics = array(
+        'total_request'   => 0, 
+        'throw_exception' => 0,
+        'send_fail'       => 0,
+    );
+    
+    /**
      * when recv data from client ,how much bytes to read
      * @var unknown_type
      */
@@ -43,16 +53,28 @@ class Connection
     const STATUS_CLOSED = 8;
     
     /**
-     * connction id
-     * @var int
+     * when receive data, onMessage will be run 
+     * @var callback
      */
-    protected $_connectionId = 0;
+    public $onMessage = null;
     
     /**
-     * worker
-     * @var Worker
+     * when connection close, onClose will be run
+     * @var callback
      */
-    protected $_owner = null;
+    public $onClose = null;
+    
+    /**
+     * when some thing wrong ,onError will be run
+     * @var callback
+     */
+    public $onError = null;
+    
+    /**
+     * eventloop
+     * @var BaseEvent
+     */
+    public $event = null;
     
     /**
      * the socket
@@ -92,15 +114,14 @@ class Connection
 
     /**
      * create a connection
-     * @param Worker $owner
      * @param resource $socket
      */
-    public function __construct($owner, $socket)
+    public function __construct($socket,BaseEvent $event)
     {
-        $this->_owner = $owner;
         $this->_socket = $socket;
-        $this->_connectionId = (int)$socket;
-        Worker::$globalEvent->add($this->_socket, BaseEvent::EV_READ, array($this, 'baseRead'));
+        stream_set_blocking($this->_socket, 0);
+        $this->event = $event;
+        $this->event->add($this->_socket, BaseEvent::EV_READ, array($this, 'baseRead'));
     }
     
     /**
@@ -117,7 +138,8 @@ class Connection
             {
                 return true;
             }
-            elseif($len > 0)
+            
+            if($len > 0)
             {
                 $this->_sendBuffer = substr($send_buffer, $len);
             }
@@ -125,17 +147,24 @@ class Connection
             {
                 if(feof($this->_socket))
                 {
-                    Worker::$workerStatistics['send_fail']++;
-                    $this->shutdown();
-                    return;
+                    self::$statistics['send_fail']++;
+                    if($this->onError)
+                    {
+                        $func = $this->onError;
+                        $func($this);
+                    }
+                    $this->destroy();
+                    return false;
                 }
                 $this->_sendBuffer = $send_buffer;
             }
+            
+            $this->event->add($this->_socket, BaseEvent::EV_WRITE, array($this, 'baseWrite'));
+            return null;
         }
-        if($this->_sendBuffer !== '')
+        else
         {
             $this->_sendBuffer .= $send_buffer;
-            Worker::$globalEvent->add($this->_socket, BaseEvent::EV_WRITE, array($this, 'baseWrite'));
         }
     }
     
@@ -183,24 +212,24 @@ class Connection
           $recv_buffer .= $buffer; 
        }
        
-       if(feof($socket))
+       if($recv_buffer !== '' && $this->onMessage)
        {
-           $this->shutdown();
-           return;
-       }
-       if($recv_buffer !== '' && $this->_owner->onMessage)
-       {
-           $func = $this->_owner->onMessage;
-           Worker::$workerStatistics['total_request']++;
+           $func = $this->onMessage;
+           self::$statistics['total_request']++;
            try 
            {
-               $func($this->_owner, $this, $recv_buffer);
+               $func($this, $recv_buffer);
            }
            catch(Exception $e)
            {
-               Worker::$workerStatistics['throw_exception']++;
+               self::$statistics['throw_exception']++;
                echo $e;
            }
+       }
+       else if(feof($socket))
+       {
+           $this->destroy();
+           return;
        }
     }
 
@@ -213,11 +242,11 @@ class Connection
         $len = fwrite($this->_socket, $this->_sendBuffer);
         if($len === strlen($this->_sendBuffer))
         {
-            Worker::$globalEvent->del($this->_socket, BaseEvent::EV_WRITE);
+            $this->event->del($this->_socket, BaseEvent::EV_WRITE);
             $this->_sendBuffer = '';
             if($this->_status == self::STATUS_CLOSING)
             {
-                $this->shutdown();
+                $this->destroy();
             }
             return true;
         }
@@ -229,8 +258,8 @@ class Connection
         {
            if(feof($this->_socket))
            {
-               Worker::$workerStatistics['send_fail']++;
-               $this->shutdown();
+               self::$statistics['send_fail']++;
+               $this->destroy();
            }
         }
     }
@@ -244,37 +273,32 @@ class Connection
         $this->_status = self::STATUS_CLOSING;
         if($this->_sendBuffer === '')
         {
-           $this->shutdown();
+           $this->destroy();
         }
     }
 
     /**
-     * shutdown the connection
+     * destroy the connection
      * @void
      */
-    public function shutdown()
+    public function destroy()
     {
-       if($this->_owner->onClose)
+       if($this->onClose)
        {
-           $func = $this->_owner->onClose;
+           $func = $this->onClose;
            try
            {
                $func($this);
            }
            catch (Exception $e)
            {
-               Worker::$workerStatistics['throw_exception']++;
+               self::$statistics['throw_exception']++;
                echo $e;
            }
        }
-       Worker::$globalEvent->del($this->_socket, BaseEvent::EV_READ);
-       Worker::$globalEvent->del($this->_socket, BaseEvent::EV_WRITE);
+       $this->event->del($this->_socket, BaseEvent::EV_READ);
+       $this->event->del($this->_socket, BaseEvent::EV_WRITE);
        @fclose($this->_socket);
-       unset($this->_owner->connections[$this->_connectionId]);
        $this->_status = self::STATUS_CLOSED;
-       if(Worker::isStopingAll() && Worker::allWorkHasBeenDone())
-       {
-           exit(0);
-       }
     }
 }

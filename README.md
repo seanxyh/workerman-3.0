@@ -9,14 +9,14 @@ $worker = new Workerman\Worker("tcp://0.0.0.0:1234");
 // when client connect 1234 port
 $worker->onConnect = function($connection)
 {
-    echo "client connected\n";
+    echo "client " . $connection->getRemoteIp() . " connected\n";
 };
 
 // when client send data to 1234 port
-$worker->onMessage = function($worker, $connection, $data)
+$worker->onMessage = function($connection, $data)
 {
     // send data to client
-    $connection->send($data);
+    $connection->send("receive data:".$data."\n");
 };
 
 // when client close connection
