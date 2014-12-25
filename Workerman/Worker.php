@@ -221,6 +221,7 @@ class Worker
         self::daemonize();
         self::initWorkers();
         self::installSignal();
+        self::displayUI();
         self::resetStd();
         self::saveMasterPid();
         self::forkWorkers();
@@ -808,7 +809,6 @@ class Worker
             throw new Exception($errmsg);
         }
         stream_set_blocking($this->_mainSocket, 0);
-        echo $this->_socketName."\n";
     }
     
     /**
