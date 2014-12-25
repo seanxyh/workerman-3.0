@@ -360,8 +360,6 @@ class Worker
             default :
                  exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
         }
-        
-        Worker::runAll();
     }
     
     /**

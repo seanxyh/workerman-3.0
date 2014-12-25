@@ -28,3 +28,9 @@ $worker->onClose = function($connection)
 {
     echo "client closed\n";
 };
+
+// run worker
+//$worker->run();
+Worker::runAll();
+
+
