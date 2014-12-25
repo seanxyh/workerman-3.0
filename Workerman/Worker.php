@@ -61,7 +61,7 @@ class Worker
      * worker name for marking process
      * @var string
      */
-    public $name = '';
+    public $name = 'none';
     
     /**
      * when worker start, then run onStart
@@ -104,6 +104,12 @@ class Worker
      * @var unknown_type
      */
     public $count = 1;
+    
+    /**
+     * set the real user of the worker process, needs appropriate privileges (usually root) 
+     * @var string
+     */
+    public $user = '';
     
     /**
      * if run as daemon
@@ -179,9 +185,15 @@ class Worker
     
     /**
      * max length of $_socketName
-     * @var unknown_type
+     * @var int
      */
     protected static $_maxSocketNameLength = 12;
+    
+    /**
+     * max length of $user's name
+     * @var int
+     */
+    protected static $_maxUserNameLength = 12;
     
     /**
      * the path of status file, witch will store status of processes
@@ -244,7 +256,7 @@ class Worker
             // if worker->name not set then use worker->_socketName as worker->name
             if(empty($worker->name))
             {
-                $worker->name = $worker->getSocketName();;
+                $worker->name = 'none';
             }
             // get the max length of worker->name for formating status info
             $worker_name_length = strlen($worker->name);
@@ -258,12 +270,34 @@ class Worker
             {
                 self::$_maxSocketNameLength = $socket_name_length;
             }
+            // get the max length user name
+            if(empty($worker->user))
+            {
+                $worker->user = self::getCurrentUser();
+            }
+            $user_name_length = strlen($worker->user);
+            if(self::$_maxUserNameLength < $user_name_length)
+            {
+                self::$_maxUserNameLength = $user_name_length;
+            }
+            // listen
+            $worker->listen();
         }
-        
-        // create stream sockets 
+    }
+    
+    protected static function getCurrentUser()
+    {
+        $user_info = posix_getpwuid(posix_getuid());
+        return $user_info['name'];
+    }
+    
+    protected static function displayUI()
+    {
+        echo 'Workerman version:' . Worker::VERSION . "          PHP version:".PHP_VERSION."\n";
+        echo "\033[47;30muser\033[0m",str_pad('', self::$_maxUserNameLength+2-strlen('user')), "\033[47;30mworker\033[0m",str_pad('', self::$_maxWorkerNameLength+2-strlen('worker')), "\033[47;30mlisten\033[0m",str_pad('', self::$_maxSocketNameLength+2-strlen('listen')), "\033[47;30mprocesses\033[0m \033[47;30m","status\033[0m\n";
         foreach(self::$_workers as $worker)
         {
-            $worker->listen();
+            echo str_pad($worker->user, self::$_maxUserNameLength+2),str_pad($worker->user, self::$_maxWorkerNameLength+2),str_pad($worker->getSocketName(), self::$_maxSocketNameLength+2), str_pad(' '.$worker->count, 9+2), "\033[32;40m [OK] \033[0m\n";;
         }
     }
     
