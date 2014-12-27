@@ -1,6 +1,9 @@
 <?php
 namespace Workerman;
-
+if(!ini_get('date.timezone') )
+{
+    date_default_timezone_set('Asia/Shanghai');
+}
 ini_set('display_errors', 'on');
 
 require_once __DIR__ . '/Connection.php';
