@@ -337,6 +337,8 @@ class Worker
         
         $command = trim($argv[1]);
         
+        self::log("Workerman[$start_file] $command");
+        
         // check if master process is running
         $master_pid = @file_get_contents(self::$pidFile);
         $master_is_alive = $master_pid && @posix_kill($master_pid, 0);
