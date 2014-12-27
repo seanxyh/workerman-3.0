@@ -124,16 +124,22 @@ class Worker
     public static $stdoutFile = '/dev/null';
     
     /**
-     * master process pid
-     * @var int
-     */
-    public static $masterPid = 0;
-    
-    /**
      * pid file
      * @var string
      */
     public static $pidFile = '';
+    
+    /**
+     * log file path
+     * @var unknown_type
+     */
+    public static $logFile = '';
+    
+    /**
+     * master process pid
+     * @var int
+     */
+    protected static $_masterPid = 0;
     
     /**
      * event loop
@@ -202,6 +208,12 @@ class Worker
     protected static $_statisticsFile = '';
     
     /**
+     * start file path
+     * @var string
+     */
+    protected static $_startFile = '';
+    
+    /**
      * global statistics
      * @var array
      */
@@ -237,8 +249,12 @@ class Worker
         if(empty(self::$pidFile))
         {
             $backtrace = debug_backtrace();
-            $start_file = $backtrace[count($backtrace)-1]['file'];
-            self::$pidFile = sys_get_temp_dir()."/workerman.".fileinode($start_file).".pid";
+            self::$_startFile = $backtrace[count($backtrace)-1]['file'];
+            self::$pidFile = sys_get_temp_dir()."/workerman.".fileinode(self::$_startFile).".pid";
+        }
+        if(empty(self::$logFile))
+        {
+            self::$logFile = __DIR__ . '/../workerman.log';
         }
         self::$_status = self::STATUS_STARTING;
         self::$_globalStatistics['start_timestamp'] = time();
@@ -328,12 +344,12 @@ class Worker
         {
             if($command === 'start')
             {
-                exit("Workerman[$start_file] is running\n");
+                self::log("Workerman[$start_file] is running");
             }
         }
         elseif($command !== 'start' && $command !== 'restart')
         {
-            exit("Workerman[$start_file] not run\n");
+            self::log("Workerman[$start_file] not run");
         }
         
         switch($command)
@@ -360,7 +376,7 @@ class Worker
             case 'restart':
             // stop workeran
             case 'stop':
-                echo "Workerman[$start_file] is stoping ...\n";
+                self::log("Workerman[$start_file] is stoping ...");
                 // send SIGINT to master process, master process will stop all children process and exit
                 posix_kill($master_pid, SIGINT);
                 // if $timeout seconds master process not exit then dispaly stop failure
@@ -375,13 +391,14 @@ class Worker
                         // check whether has timed out
                         if(time() - $start_time >= $timeout)
                         {
-                            exit("Workerman[$start_file] stop fail\n");
+                            self::log("Workerman[$start_file] stop fail");
+                            exit;
                         }
                         // avoid the cost of CPU time, sleep for a while
                         usleep(10000);
                         continue;
                     }
-                    echo "Workerman[$start_file] stop success\n";
+                    self::log("Workerman[$start_file] stop success");
                     if($command === 'stop')
                     {
                         exit(0);
@@ -392,8 +409,8 @@ class Worker
             // reload workerman
             case 'reload':
                 posix_kill($master_pid, SIGUSR1);
-                echo "Workerman[$start_file] reload\n";
-                exit(0);
+                self::log("Workerman[$start_file] reload");
+                exit;
             // unknow command
             default :
                  exit("Usage: php yourfile.php {start|stop|restart|reload|status}\n");
@@ -528,8 +545,8 @@ class Worker
      */
     protected static function saveMasterPid()
     {
-        self::$masterPid = posix_getpid();
-        if(false === @file_put_contents(self::$pidFile, self::$masterPid))
+        self::$_masterPid = posix_getpid();
+        if(false === @file_put_contents(self::$pidFile, self::$_masterPid))
         {
             throw new Exception('can not save pid to ' . self::$pidFile);
         }
@@ -633,7 +650,7 @@ class Worker
                         // check status
                         if($status !== 0)
                         {
-                            echo "worker[".$worker->name.":$pid] exit with status $status\n";
+                            self::log("worker[".$worker->name.":$pid] exit with status $status");
                         }
                        
                         // statistics
@@ -667,7 +684,7 @@ class Worker
                     if(empty($all_worker_pids))
                     {
                         @unlink(self::$pidFile);
-                        echo "Workerman has been stopped\n";
+                        self::log("Workerman[".basename(self::$_startFile)."] has been stopped");
                         exit(0);
                     }
                 }
@@ -682,12 +699,12 @@ class Worker
     protected static function reload()
     {
         // for master process
-        if(self::$masterPid === posix_getpid())
+        if(self::$_masterPid === posix_getpid())
         {
             // set status
             if(self::$_status !== self::STATUS_RELOADING && self::$_status !== self::STATUS_SHUTDOWN)
             {
-                echo "Workerman reloading\n";
+                self::log("Workerman[".basename(self::$_startFile)."] reloading");
                 self::$_status = self::STATUS_RELOADING;
             }
             // reload complete
@@ -719,9 +736,9 @@ class Worker
     {
         self::$_status = self::STATUS_SHUTDOWN;
         // for master process
-        if(Worker::$masterPid === posix_getpid())
+        if(self::$_masterPid === posix_getpid())
         {
-            echo "Stoping Workerman...\n";
+            self::log("Workerman[".basename(self::$_startFile)."] Stopping ...");
             $worker_pid_array = self::getAllWorkerPids();
             foreach($worker_pid_array as $worker_pid)
             {
@@ -747,7 +764,7 @@ class Worker
     protected static function writeStatisticsToStatusFile()
     {
         // for master process
-        if(self::$masterPid === posix_getpid())
+        if(self::$_masterPid === posix_getpid())
         {
             $loadavg = sys_getloadavg();
             file_put_contents(self::$_statisticsFile, "---------------------------------------GLOBAL STATUS--------------------------------------------\n");
@@ -786,6 +803,21 @@ class Worker
         $wrker_status_str = posix_getpid()."\t".str_pad(round(memory_get_usage()/(1024*1024),2)."M", 7)." " .str_pad($worker->getSocketName(), 20) ." ".str_pad(($worker->name == $worker->getSocketName() ? 'none' : $worker->name), self::$_maxWorkerNameLength)." ";
         $wrker_status_str .=  str_pad(Connection::$statistics['total_request'], 14)." ".str_pad(Connection::$statistics['send_fail'],9)." ".str_pad(Connection::$statistics['throw_exception'],15)."\n";
         file_put_contents(self::$_statisticsFile, $wrker_status_str, FILE_APPEND);
+    }
+    
+    /**
+     * log
+     * @param string $msg
+     * @return void
+     */
+    protected static function log($msg)
+    {
+        $msg = $msg."\n";
+        if(self::$_status === self::STATUS_STARTING || !self::$daemonize)
+        {
+            echo $msg;
+        }
+        file_put_contents(self::$logFile, date('Y-m-d H:i:s') . " " . $msg, FILE_APPEND);
     }
     
     /**
@@ -897,7 +929,7 @@ class Worker
             catch(Exception $e)
             {
                 Connection::$statistics['throw_exception']++;
-                echo $e;
+                self::log($e);
             }
         }
     }
