@@ -11,6 +11,7 @@ require_once __DIR__ . '/Timer.php';
 require_once __DIR__ . '/Events/BaseEvent.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
+require_once __DIR__ . '/ProtocolInterface.php';
 
 use Workerman\Events\Libevent;
 use Workerman\Events\Select;
