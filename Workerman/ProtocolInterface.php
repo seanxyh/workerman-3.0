@@ -1,6 +1,6 @@
 <?php
 namespace Workerman;
-use Workerman\Connection;
+use Workerman\Connection\ConnectionInterface;
 
 /**
  * Protocol interface
@@ -10,22 +10,22 @@ interface ProtocolInterface
 {
     /**
      * 
-     * @param Connection $connection
+     * @param ConnectionInterface $connection
      * @param string $recv_buffer
      */
-    public static function input(Connection $connection, &$recv_buffer);
+    public static function input(ConnectionInterface $connection, $recv_buffer);
     
     /**
      * 
-     * @param Connection $connection
+     * @param ConnectionInterface $connection
      * @param string $buffer
      */
-    public static function encode(Connection $connection, $buffer);
+    public static function encode(ConnectionInterface $connection, $buffer);
     
     /**
      * 
-     * @param Connection $connection
+     * @param ConnectionInterface $connection
      * @param mixed $data
      */
-    public static function decode(Connection $connection, $data);
+    public static function decode(ConnectionInterface $connection, $data);
 }

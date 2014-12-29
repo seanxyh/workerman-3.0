@@ -1,19 +1,9 @@
 <?php 
 namespace  Protocols\Http;
 
-class Http implements Workerman\ProtocolInterface
+class Http implements \Workerman\ProtocolInterface
 {
-    public static function input($connection, &$recv_buffer)
-    {
-        $request_array = array();
-        while($recv_buffer && $request = self::separateHttpRequest($recv_buffer))
-        {
-            $request_array[] = $request;
-        }
-        return $request_array;
-    }
-    
-    protected static function separateHttpRequest(&$recv_buffer)
+    protected static function input($connection, $recv_buffer)
     {
         if(!strpos($recv_buffer, "\r\n\r\n"))
         {
@@ -31,21 +21,16 @@ class Http implements Workerman\ProtocolInterface
             }
             else
             {
-                $whole_request_buffer = $recv_buffer;
-                $recv_buffer = '';
-                return $whole_request_buffer;
+                return $recv_buffer;
             }
-            $recv_body_length = strlen($body);
-            if($content_lenght <= $recv_body_length)
+            if($content_lenght <= strlen($body))
             {
-                $recv_buffer = substr($recv_buffer, strlen($header) + $recv_body_length + 4);
                 return $header."\r\n\r\n".$body;
             }
             return;
         }
         else
         {
-            $recv_buffer = $body;
             return $header."\r\n\r\n";
         }
         return;

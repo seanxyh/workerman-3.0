@@ -1,7 +1,7 @@
 <?php
 namespace Workerman\Events;
 
-interface BaseEvent
+interface EventInterface
 {
     /**
      * read event

@@ -1,7 +1,7 @@
 <?php
 namespace Workerman\Events;
 
-class Select implements BaseEvent
+class Select implements EventInterface
 {
     /**
      * all events
@@ -29,7 +29,7 @@ class Select implements BaseEvent
     
     /**
      * add
-     * @see Events\BaseEvent::add()
+     * @see Events\EventInterface::add()
      */
     public function add($fd, $flag, $func)
     {
@@ -65,7 +65,7 @@ class Select implements BaseEvent
     
     /**
      * del
-     * @see Events\BaseEvent::del()
+     * @see Events\EventInterface::del()
      */
     public function del($fd ,$flag)
     {
@@ -95,7 +95,7 @@ class Select implements BaseEvent
     }
     /**
      * main loop
-     * @see Events\BaseEvent::loop()
+     * @see Events\EventInterface::loop()
      */
     public function loop()
     {

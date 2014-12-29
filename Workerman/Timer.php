@@ -1,6 +1,6 @@
 <?php
 namespace Workerman;
-use \Workerman\Events\BaseEvent;
+use \Workerman\Events\EventInterface;
 
 /**
  * 
@@ -36,7 +36,7 @@ class Timer
     {
         if($event)
         {
-            $event->add(SIGALRM, BaseEvent::EV_SIGNAL, array('\Workerman\Timer', 'signalHandle'));
+            $event->add(SIGALRM, EventInterface::EV_SIGNAL, array('\Workerman\Timer', 'signalHandle'));
         }
         else 
         {

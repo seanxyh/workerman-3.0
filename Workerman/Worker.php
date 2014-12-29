@@ -6,23 +6,26 @@ if(!ini_get('date.timezone') )
 }
 ini_set('display_errors', 'on');
 
-require_once __DIR__ . '/Connection.php';
+require_once __DIR__ . '/Connection/ConnectionInterface.php';
+require_once __DIR__ . '/Connection/TcpConnection.php';
 require_once __DIR__ . '/Timer.php';
-require_once __DIR__ . '/Events/BaseEvent.php';
+require_once __DIR__ . '/Events/EventInterface.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
 require_once __DIR__ . '/ProtocolInterface.php';
 
 use Workerman\Events\Libevent;
 use Workerman\Events\Select;
-use Workerman\Events\BaseEvent;
+use Workerman\Events\EventInterface;
+use Workerman\Connection\ConnectionInterface;
+use Workerman\Connection\TcpConnection;
 use \Exception;
 
 /**
  * 
  * @author walkor<walkor@workerman.net>
  */
-class Worker 
+class Worker
 {
     /**
      * workerman version
@@ -114,6 +117,18 @@ class Worker
      * @var string
      */
     public $user = '';
+    
+    /**
+     * tcp/udp
+     * @var string
+     */
+    public $transport = 'tcp';
+    
+    /**
+     * protocol
+     * @var string
+     */
+    protected $_protocol = '';
     
     /**
      * if run as daemon
@@ -452,11 +467,11 @@ class Worker
         // uninstall  status signal handler
         pcntl_signal(SIGUSR2, SIG_IGN, false);
         // reinstall stop signal handler
-        self::$_globalEvent->add(SIGINT, BaseEvent::EV_SIGNAL, array('\Workerman\Worker', 'signalHandler'));
+        self::$_globalEvent->add(SIGINT, EventInterface::EV_SIGNAL, array('\Workerman\Worker', 'signalHandler'));
         //  uninstall  reload signal handler
-        self::$_globalEvent->add(SIGUSR1, BaseEvent::EV_SIGNAL,array('\Workerman\Worker', 'signalHandler'));
+        self::$_globalEvent->add(SIGUSR1, EventInterface::EV_SIGNAL,array('\Workerman\Worker', 'signalHandler'));
         // uninstall  status signal handler
-        self::$_globalEvent->add(SIGUSR2, BaseEvent::EV_SIGNAL, array('\Workerman\Worker', 'signalHandler'));
+        self::$_globalEvent->add(SIGUSR2, EventInterface::EV_SIGNAL, array('\Workerman\Worker', 'signalHandler'));
     }
     
     /**
@@ -807,7 +822,7 @@ class Worker
         // for worker process
         $worker = current(self::$_workers);
         $wrker_status_str = posix_getpid()."\t".str_pad(round(memory_get_usage()/(1024*1024),2)."M", 7)." " .str_pad($worker->getSocketName(), 20) ." ".str_pad(($worker->name == $worker->getSocketName() ? 'none' : $worker->name), self::$_maxWorkerNameLength)." ";
-        $wrker_status_str .=  str_pad(Connection::$statistics['total_request'], 14)." ".str_pad(Connection::$statistics['send_fail'],9)." ".str_pad(Connection::$statistics['throw_exception'],15)."\n";
+        $wrker_status_str .=  str_pad(ConnectionInterface::$statistics['total_request'], 14)." ".str_pad(ConnectionInterface::$statistics['send_fail'],9)." ".str_pad(ConnectionInterface::$statistics['throw_exception'],15)."\n";
         file_put_contents(self::$_statisticsFile, $wrker_status_str, FILE_APPEND);
     }
     
@@ -844,7 +859,26 @@ class Worker
      */
     public function listen()
     {
-        $this->_mainSocket = stream_socket_server($this->_socketName, $errno, $errmsg);
+        list($scheme, $address) = explode(':', $this->_socketName, 2);
+        $scheme = ucfirst($scheme);
+        if($scheme != 'tcp' && $scheme != 'udp')
+        {
+            $this->_protocol = 'Protocols\\'.$scheme;
+        }
+        if(!class_exists($this->_protocol))
+        {
+            $protocol_file = __DIR__."/Protocols/$scheme/$scheme.php";
+            if(!file_exists($protocol_file))
+            {
+                throw new Exception($protocol_file . ' not exist');
+            }
+            require_once $protocol_file;
+            if(!class_exists($this->_protocol))
+            {
+                throw new Exception('class ' .$this->_protocol . ' not exist');
+            }
+        }
+        $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg);
         if(!$this->_mainSocket)
         {
             throw new Exception($errmsg);
@@ -878,7 +912,7 @@ class Worker
             }
         }
         self::reinstallSignal();
-        self::$_globalEvent->add($this->_mainSocket, BaseEvent::EV_READ, array($this, 'accept'));
+        self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'accept'));
         if($this->onStart)
         {
             $func = $this->onStart;
@@ -898,6 +932,8 @@ class Worker
             $func = $this->onStop;
             $func($this);
         }
+        self::$_globalEvent->del($this->_mainSocket, EventInterface::EV_READ);
+        @fclose($this->_mainSocket);
     }
 
     /**
@@ -912,7 +948,11 @@ class Worker
         {
             return;
         }
-        $connection = new Connection($new_socket, self::$_globalEvent);
+        $connection = new TcpConnection($new_socket, self::$_globalEvent);
+        if($this->_protocol)
+        {
+            $connection->protocol = $this->_protocol;
+        }
         if($this->onMessage)
         {
             $connection->onMessage = $this->onMessage;
@@ -934,7 +974,7 @@ class Worker
             }
             catch(Exception $e)
             {
-                Connection::$statistics['throw_exception']++;
+                ConnectionInterface::$statistics['throw_exception']++;
                 self::log($e);
             }
         }

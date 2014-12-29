@@ -4,7 +4,7 @@ namespace Workerman\Events;
  * libevent
  * @author walkor <walkor@workerman.net>
  */
-class Libevent implements BaseEvent
+class Libevent implements EventInterface
 {
     /**
      * eventBase
@@ -35,7 +35,7 @@ class Libevent implements BaseEvent
    
     /**
      * 添加事件
-     * @see BaseEvent::add()
+     * @see EventInterface::add()
      */
     public function add($fd, $flag, $func)
     {
@@ -83,15 +83,15 @@ class Libevent implements BaseEvent
     
     /**
      * del
-     * @see Events\BaseEvent::del()
+     * @see Events\EventInterface::del()
      */
     public function del($fd ,$flag)
     {
         $fd_key = (int)$fd;
         switch($flag)
         {
-            case BaseEvent::EV_READ:
-            case BaseEvent::EV_WRITE:
+            case EventInterface::EV_READ:
+            case EventInterface::EV_WRITE:
                 if(isset($this->_allEvents[$fd_key][$flag]))
                 {
                     event_del($this->_allEvents[$fd_key][$flag]);
@@ -101,7 +101,7 @@ class Libevent implements BaseEvent
                 {
                     unset($this->_allEvents[$fd_key]);
                 }
-            case  BaseEvent::EV_SIGNAL:
+            case  EventInterface::EV_SIGNAL:
                 if(isset($this->_eventSignal[$fd_key]))
                 {
                     event_del($this->_eventSignal[$fd_key]);
@@ -113,7 +113,7 @@ class Libevent implements BaseEvent
 
     /**
      * loop
-     * @see BaseEvent::loop()
+     * @see EventInterface::loop()
      */
     public function loop()
     {

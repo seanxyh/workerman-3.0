@@ -1,8 +1,9 @@
 <?php
-namespace Workerman;
+namespace Workerman\Connection;
+
 use Workerman\Events\Libevent;
 use Workerman\Events\Select;
-use Workerman\Events\BaseEvent;
+use Workerman\Events\EventInterface;
 use Workerman\Worker;
 use \Exception;
 
@@ -10,18 +11,8 @@ use \Exception;
  * connection 
  * @author walkor<walkor@workerman.net>
  */
-class Connection
+class TcpConnection implements ConnectionInterface
 {
-    /**
-     * statistics for status
-     * @var array
-     */
-    public static $statistics = array(
-        'total_request'   => 0, 
-        'throw_exception' => 0,
-        'send_fail'       => 0,
-    );
-    
     /**
      * when recv data from client ,how much bytes to read
      * @var unknown_type
@@ -71,10 +62,16 @@ class Connection
     public $onError = null;
     
     /**
-     * eventloop
-     * @var BaseEvent
+     * protocol
+     * @var string
      */
-    public $event = null;
+    public $protocol = '';
+    
+    /**
+     * eventloop
+     * @var EventInterface
+     */
+    protected $_event = null;
     
     /**
      * the socket
@@ -87,6 +84,12 @@ class Connection
      * @var string
      */
     protected $_sendBuffer = '';
+    
+    /**
+     * the buffer read from socket
+     * @var string
+     */
+    protected $_recvBuffer = '';
 
     /**
      * connection status
@@ -116,12 +119,12 @@ class Connection
      * create a connection
      * @param resource $socket
      */
-    public function __construct($socket,BaseEvent $event)
+    public function __construct($socket, EventInterface $event)
     {
         $this->_socket = $socket;
         stream_set_blocking($this->_socket, 0);
-        $this->event = $event;
-        $this->event->add($this->_socket, BaseEvent::EV_READ, array($this, 'baseRead'));
+        $this->_event = $event;
+        $this->_event->add($this->_socket, EventInterface::EV_READ, array($this, 'baseRead'));
     }
     
     /**
@@ -131,6 +134,12 @@ class Connection
      */
     public function send($send_buffer)
     {
+        if($this->protocol)
+        {
+            $parser = $this->protocol;
+            $send_buffer = $parser::encode($send_buffer);
+        }
+        
         if($this->_sendBuffer === '')
         {
             $len = fwrite($this->_socket, $send_buffer);
@@ -159,7 +168,7 @@ class Connection
                 $this->_sendBuffer = $send_buffer;
             }
             
-            $this->event->add($this->_socket, BaseEvent::EV_WRITE, array($this, 'baseWrite'));
+            $this->_event->add($this->_socket, EventInterface::EV_WRITE, array($this, 'baseWrite'));
             return null;
         }
         else
@@ -206,25 +215,46 @@ class Connection
      */
     public function baseRead($socket)
     {
-       $recv_buffer = '';
        while($buffer = fread($socket, self::READ_BUFFER_SIZE))
        {
-          $recv_buffer .= $buffer; 
+          $this->_recvBuffer .= $buffer; 
        }
        
-       if($recv_buffer !== '' && $this->onMessage)
+       if($this->_recvBuffer !== '' && $this->onMessage)
        {
            $func = $this->onMessage;
+           // protocol has been set
+           if($this->protocol)
+           {
+               $parser = $this->protocol;
+               while($one_request_buffer = $parser::input($this->_recvBuffer))
+               {
+                   $this->_recvBuffer = substr($this->_recvBuffer, strlen($one_request_buffer));
+                   self::$statistics['total_request']++;
+                   try
+                   {
+                       $func($this, $parser::decode($one_request_buffer));
+                   }
+                   catch(Exception $e)
+                   {
+                       self::$statistics['throw_exception']++;
+                       echo $e;
+                   }
+               }
+               return;
+           }
+           // protocol not set
            self::$statistics['total_request']++;
            try 
            {
-               $func($this, $recv_buffer);
+               $func($this, $this->_recvBuffer);
            }
            catch(Exception $e)
            {
                self::$statistics['throw_exception']++;
                echo $e;
            }
+           $this->_recvBuffer = '';
        }
        else if(feof($socket))
        {
@@ -242,7 +272,7 @@ class Connection
         $len = fwrite($this->_socket, $this->_sendBuffer);
         if($len === strlen($this->_sendBuffer))
         {
-            $this->event->del($this->_socket, BaseEvent::EV_WRITE);
+            $this->_event->del($this->_socket, EventInterface::EV_WRITE);
             $this->_sendBuffer = '';
             if($this->_status == self::STATUS_CLOSING)
             {
@@ -281,7 +311,7 @@ class Connection
      * destroy the connection
      * @void
      */
-    public function destroy()
+    protected function destroy()
     {
        if($this->onClose)
        {
@@ -296,8 +326,8 @@ class Connection
                echo $e;
            }
        }
-       $this->event->del($this->_socket, BaseEvent::EV_READ);
-       $this->event->del($this->_socket, BaseEvent::EV_WRITE);
+       $this->_event->del($this->_socket, EventInterface::EV_READ);
+       $this->_event->del($this->_socket, EventInterface::EV_WRITE);
        @fclose($this->_socket);
        $this->_status = self::STATUS_CLOSED;
     }
