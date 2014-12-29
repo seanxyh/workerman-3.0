@@ -863,7 +863,7 @@ class Worker
         if($scheme != 'tcp' && $scheme != 'udp')
         {
             $scheme = ucfirst($scheme);
-            $this->_protocol = '\\Protocols\\'.$scheme;
+            $this->_protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
         }
         if($this->_protocol && !class_exists($this->_protocol))
         {
