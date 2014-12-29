@@ -45,22 +45,22 @@ abstract class  ConnectionInterface
      * @param string $send_buffer
      * @return void|boolean
      */
-    public function send($send_buffer);
+    abstract public function send($send_buffer);
     
     /**
      * get remote ip
      * @return string
      */
-    public function getRemoteIp();
+    abstract public function getRemoteIp();
     
     /**
      * get remote port
      */
-    public function getRemotePort();
+    abstract public function getRemotePort();
 
     /**
      * close the connection
      * @void
      */
-    public function close();
+    abstract public function close();
 }
