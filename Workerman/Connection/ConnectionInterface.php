@@ -10,7 +10,7 @@ use \Exception;
  * connection 
  * @author walkor<walkor@workerman.net>
  */
-interface ConnectionInterface
+abstract class  ConnectionInterface
 {
     /**
      * statistics for status

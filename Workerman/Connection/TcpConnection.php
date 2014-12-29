@@ -11,7 +11,7 @@ use \Exception;
  * connection 
  * @author walkor<walkor@workerman.net>
  */
-class TcpConnection implements ConnectionInterface
+class TcpConnection extends ConnectionInterface
 {
     /**
      * when recv data from client ,how much bytes to read
