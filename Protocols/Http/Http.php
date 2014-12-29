@@ -3,7 +3,7 @@ namespace  Protocols\Http;
 
 class Http implements \Workerman\ProtocolInterface
 {
-    protected static function input($connection, $recv_buffer)
+    public static function input($connection, $recv_buffer)
     {
         if(!strpos($recv_buffer, "\r\n\r\n"))
         {
