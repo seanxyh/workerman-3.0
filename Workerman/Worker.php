@@ -867,7 +867,7 @@ class Worker
         }
         if($this->_protocol && !class_exists($this->_protocol))
         {
-            $protocol_file = __DIR__."/Protocols/$scheme/$scheme.php";
+            $protocol_file = __DIR__."/../Protocols/$scheme/$scheme.php";
             if(!file_exists($protocol_file))
             {
                 throw new Exception($protocol_file . ' not exist');
