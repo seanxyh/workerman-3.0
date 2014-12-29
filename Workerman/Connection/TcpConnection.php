@@ -137,7 +137,7 @@ class TcpConnection extends ConnectionInterface
         if($this->protocol)
         {
             $parser = $this->protocol;
-            $send_buffer = $parser::encode($this, $send_buffer);
+            $send_buffer = $parser::encode($send_buffer, $this);
         }
         
         if($this->_sendBuffer === '')
@@ -227,13 +227,13 @@ class TcpConnection extends ConnectionInterface
            if($this->protocol)
            {
                $parser = $this->protocol;
-               while($one_request_buffer = $parser::input($this->_recvBuffer))
+               while($one_request_buffer = $parser::input($this->_recvBuffer, $this))
                {
                    $this->_recvBuffer = substr($this->_recvBuffer, strlen($one_request_buffer));
                    self::$statistics['total_request']++;
                    try
                    {
-                       $func($this, $parser::decode($this, $one_request_buffer));
+                       $func($this, $parser::decode($one_request_buffer, $this));
                    }
                    catch(Exception $e)
                    {

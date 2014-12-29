@@ -3,7 +3,7 @@ namespace  Protocols\Http;
 
 class Http implements \Workerman\ProtocolInterface
 {
-    public static function input($connection, $recv_buffer)
+    public static function input($recv_buffer)
     {
         if(!strpos($recv_buffer, "\r\n\r\n"))
         {
@@ -36,7 +36,7 @@ class Http implements \Workerman\ProtocolInterface
         return;
     }
     
-    public static function decode($connection, $recv_buffer)
+    public static function decode($recv_buffer)
     {
         // 初始化
         $_POST = $_GET = $_COOKIE = $_REQUEST = $_SESSION =  array();
