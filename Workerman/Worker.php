@@ -860,12 +860,12 @@ class Worker
     public function listen()
     {
         list($scheme, $address) = explode(':', $this->_socketName, 2);
-        $scheme = ucfirst($scheme);
         if($scheme != 'tcp' && $scheme != 'udp')
         {
+            $scheme = ucfirst($scheme);
             $this->_protocol = 'Protocols\\'.$scheme;
         }
-        if(!class_exists($this->_protocol))
+        if($this->_protocol && !class_exists($this->_protocol))
         {
             $protocol_file = __DIR__."/Protocols/$scheme/$scheme.php";
             if(!file_exists($protocol_file))
