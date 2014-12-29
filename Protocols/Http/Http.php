@@ -36,7 +36,7 @@ class Http implements \Workerman\ProtocolInterface
         return;
     }
     
-    function decode($connection, $recv_buffer)
+    public static function decode($connection, $recv_buffer)
     {
         // 初始化
         $_POST = $_GET = $_COOKIE = $_REQUEST = $_SESSION =  array();
@@ -155,7 +155,7 @@ class Http implements \Workerman\ProtocolInterface
         $_REQUEST = array_merge($_GET, $_POST);
     }
     
-    function encode($content)
+    public static function encode($content)
     {
         // 没有http-code默认给个
         if(!isset(HttpCache::$header['Http-Code']))
