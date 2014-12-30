@@ -1,11 +1,11 @@
-<?php
-ini_set('display_errors', 'on');
-
-require_once './Workerman/Worker.php';
+<?php 
 use Workerman\Worker;
+require_once __DIR__ . '/../Lib/Autoloader.php';
 
-// create socket and listen 1234 port
-$worker = new Workerman\Worker("tcp://0.0.0.0:1234");
+// create socket and listen 5678 port
+$worker = new Worker("tcp://0.0.0.0:5678");
+
+$worker->name = 'Gateway';
 
 // create 4 processes
 $worker->count = 4;
@@ -28,9 +28,3 @@ $worker->onClose = function($connection)
 {
     echo "client closed\n";
 };
-
-// run worker
-//$worker->run();
-Worker::runAll();
-
-

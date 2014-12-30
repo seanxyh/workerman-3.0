@@ -867,16 +867,7 @@ class Worker
         }
         if($this->_protocol && !class_exists($this->_protocol))
         {
-            $protocol_file = __DIR__."/../Protocols/$scheme/$scheme.php";
-            if(!file_exists($protocol_file))
-            {
-                throw new Exception($protocol_file . ' not exist');
-            }
-            require_once $protocol_file;
-            if(!class_exists($this->_protocol))
-            {
-                throw new Exception('class ' .$this->_protocol . ' not exist');
-            }
+            throw new Exception('class ' .$this->_protocol . ' not exist');
         }
         $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg);
         if(!$this->_mainSocket)
