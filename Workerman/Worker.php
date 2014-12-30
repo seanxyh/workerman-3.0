@@ -701,16 +701,30 @@ class Worker
                 else
                 {
                     // workerman is shuting down
-                    $all_worker_pids = self::getAllWorkerPids();
-                    if(empty($all_worker_pids))
+                    if(!self::getAllWorkerPids())
                     {
-                        @unlink(self::$pidFile);
-                        self::log("Workerman[".basename(self::$_startFile)."] has been stopped");
-                        exit(0);
+                        self::exitAndClearAll();
                     }
                 }
             }
+            else 
+            {
+                if(self::$_status === self::STATUS_SHUTDOWN && !self::getAllWorkerPids())
+                {
+                   self::exitAndClearAll();
+                }
+            }
         }
+    }
+    
+    /**
+     * exit
+     */
+    protected static function exitAndClearAll()
+    {
+        @unlink(self::$pidFile);
+        self::log("Workerman[".basename(self::$_startFile)."] has been stopped");
+        exit(0);
     }
     
     /**
