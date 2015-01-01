@@ -1,32 +1,34 @@
-## workerman react 
+## workerman 3.0 
 create test.php
 ```php
 require_once './Workerman/Worker.php';
+use Workerman\Worker;
 
 // create socket and listen 1234 port
-$worker = new Workerman\Worker("tcp://0.0.0.0:1234");
+$hello_worker = new Worker("tcp://0.0.0.0:1234");
 
-// when client connect 1234 port
-$worker->onConnect = function($connection)
-{
-    echo "client " . $connection->getRemoteIp() . " connected\n";
-};
+// 4 hello_worker processes
+$hello_worker->count = 4;
 
 // when client send data to 1234 port
-$worker->onMessage = function($connection, $data)
+$hello_worker->onMessage = function($connection, $data)
 {
     // send data to client
-    $connection->send("receive data:".$data."\n");
+    $connection->send("hello $data \n");
 };
 
-// when client close connection
-$worker->onClose = function($connection)
+// another worker
+$hi_worker = new Worker("tcp://0.0.0.0:5678");
+$hi_worker->count = 4;
+$hi_worker->onMessage = function($connection, $data)
 {
-    echo "client closed\n";
+    // send data to client
+    $connection->send("hi $data \n");
 };
 
-// run worker
-$worker->run();
+
+// run all workers
+Worker::runAll();
 ```
 
 run width
