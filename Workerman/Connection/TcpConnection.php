@@ -118,6 +118,7 @@ class TcpConnection extends ConnectionInterface
     /**
      * create a connection
      * @param resource $socket
+     * @param EventInterface $event
      */
     public function __construct($socket, EventInterface $event)
     {

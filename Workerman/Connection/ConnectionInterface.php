@@ -35,7 +35,7 @@ abstract class  ConnectionInterface
     public $onClose = null;
     
     /**
-     * when some thing wrong ,onError will be run
+     * when something wrong ,onError will be run
      * @var callback
      */
     public $onError = null;

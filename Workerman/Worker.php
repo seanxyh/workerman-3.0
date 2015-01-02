@@ -1,5 +1,7 @@
 <?php
 namespace Workerman;
+use Workerman\Connection\UdpConnection;
+
 if(!ini_get('date.timezone') )
 {
     date_default_timezone_set('Asia/Shanghai');
@@ -63,6 +65,12 @@ class Worker
      * @var int
      */
     const KILL_WORKER_TIMER_TIME = 1;
+    
+    /**
+     * backlog
+     * @var int
+     */
+    const DEFAUL_BACKLOG = 1024;
     
     /**
      * worker name for marking process
@@ -177,6 +185,12 @@ class Worker
      * @var string
      */
     protected $_socketName = '';
+    
+    /**
+     * context
+     * @var context
+     */
+    protected $_context = null;
     
     /**
      * all instances of worker
@@ -860,11 +874,16 @@ class Worker
      * @param string $socket_name
      * @return void
      */
-    public function __construct($socket_name)
+    public function __construct($socket_name, $context_option = array())
     {
         $this->_socketName = $socket_name;
         self::$_workers[$this->_socketName] = $this;
         self::$_pidMap[$this->_socketName] = array();
+        if(!isset($context_option['socket']['backlog']))
+        {
+            $context_option['socket']['backlog'] = self::DEFAUL_BACKLOG;
+        }
+        $this->_context = stream_context_create($context_option);
     }
     
     /**
@@ -873,17 +892,23 @@ class Worker
      */
     public function listen()
     {
+        $flags =  STREAM_SERVER_BIND | STREAM_SERVER_LISTEN;
         list($scheme, $address) = explode(':', $this->_socketName, 2);
         if($scheme != 'tcp' && $scheme != 'udp')
         {
             $scheme = ucfirst($scheme);
             $this->_protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
         }
+        elseif($scheme === 'udp')
+        {
+            $this->transport = 'udp';
+            $flags = STREAM_SERVER_BIND;
+        }
         if($this->_protocol && !class_exists($this->_protocol))
         {
             throw new Exception('class ' .$this->_protocol . ' not exist');
         }
-        $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg);
+        $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg, $flags, $this->_context);
         if(!$this->_mainSocket)
         {
             throw new Exception($errmsg);
@@ -917,7 +942,14 @@ class Worker
             }
         }
         self::reinstallSignal();
-        self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'accept'));
+        if($this->transport !== 'udp')
+        {
+            self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'acceptConnection'));
+        }
+        else
+        {
+            self::$_globalEvent->add($this->_mainSocket,  EventInterface::EV_READ, array($this, 'acceptUdpConnection'));
+        }
         if($this->onStart)
         {
             $func = $this->onStart;
@@ -946,7 +978,7 @@ class Worker
      * @param resources $socket
      * @return void
      */
-    public function accept($socket)
+    public function acceptConnection($socket)
     {
         $new_socket = @stream_socket_accept($socket, 0);
         if(false === $new_socket)
@@ -981,6 +1013,36 @@ class Worker
             {
                 ConnectionInterface::$statistics['throw_exception']++;
                 self::log($e);
+            }
+        }
+    }
+    
+    /**
+     * deall udp package
+     * @param resource $socket
+     */
+    public function acceptUdpConnection($socket)
+    {
+        $recv_buffer = stream_socket_recvfrom($socket , self::MAX_UDP_PACKEG_SIZE, 0, $remote_address);
+        if(false === $recv_buffer || empty($remote_address))
+        {
+            return false;
+        }
+        
+        ConnectionInterface::$statistics['total_request'] ++;
+         
+        $connection = new UdpConnection($socket, $remote_address);
+        if($this->onMessage)
+        {
+            $func = $this->onMessage;
+            $parser = $this->_protocol;
+            try
+            {
+               $func($connection, $parser::decode($recv_buffer, $connection));
+            }
+            catch(Exception $e)
+            {
+                ConnectionInterface::$statistics['throw_exception']++;
             }
         }
     }
