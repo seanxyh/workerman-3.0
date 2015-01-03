@@ -1,6 +1,5 @@
 <?php
 namespace Workerman;
-use Workerman\Connection\UdpConnection;
 
 if(!ini_get('date.timezone') )
 {
@@ -21,6 +20,7 @@ use Workerman\Events\Select;
 use Workerman\Events\EventInterface;
 use Workerman\Connection\ConnectionInterface;
 use Workerman\Connection\TcpConnection;
+use Workerman\Connection\UdpConnection;
 use \Exception;
 
 /**
@@ -986,22 +986,10 @@ class Worker
             return;
         }
         $connection = new TcpConnection($new_socket, self::$_globalEvent);
-        if($this->_protocol)
-        {
-            $connection->protocol = $this->_protocol;
-        }
-        if($this->onMessage)
-        {
-            $connection->onMessage = $this->onMessage;
-        }
-        if($this->onClose)
-        {
-            $connection->onClose = $this->onClose;
-        }
-        if($this->onError)
-        {
-            $connection->onError = $this->onError;
-        }
+        $connection->protocol = $this->_protocol;
+        $connection->onMessage = $this->onMessage;
+        $connection->onClose = $this->onClose;
+        $connection->onError = $this->onError;
         if($this->onConnect)
         {
             $func = $this->onConnect;
