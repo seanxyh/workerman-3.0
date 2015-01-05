@@ -9,9 +9,9 @@ use WorkerMan\Worker;
 
 require_once __DIR__ . '/Workerman/Worker.php';
 
-foreach(glob(__DIR__.'/applications/*/Bootstrap/*.php') as $start_file)
+foreach(glob(__DIR__.'/applications/*/bootstrap.php') as $bootstrap_file)
 {
-    require_once $start_file;;
+    require_once $bootstrap_file;;
 }
 
 Worker::runAll();

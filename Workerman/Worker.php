@@ -10,6 +10,7 @@ ini_set('display_errors', 'on');
 require_once __DIR__ . '/Connection/ConnectionInterface.php';
 require_once __DIR__ . '/Connection/TcpConnection.php';
 require_once __DIR__ . '/Timer.php';
+require_once __DIR__ . '/Lock.php';
 require_once __DIR__ . '/Events/EventInterface.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
@@ -781,7 +782,7 @@ class Worker
      * stop all workers
      * @return void
      */
-    protected static function stopAll()
+    public static function stopAll()
     {
         self::$_status = self::STATUS_SHUTDOWN;
         // for master process
@@ -897,16 +898,20 @@ class Worker
         if($scheme != 'tcp' && $scheme != 'udp')
         {
             $scheme = ucfirst($scheme);
-            $this->_protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
+            $this->_protocol = '\\Protocols\\'.$scheme;;
+            if(!class_exists($this->_protocol))
+            {
+                $this->_protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
+                if(!class_exists($this->_protocol))
+                {
+                    throw new Exception('class ' .$this->_protocol . ' not exist');
+                }
+            }
         }
         elseif($scheme === 'udp')
         {
             $this->transport = 'udp';
             $flags = STREAM_SERVER_BIND;
-        }
-        if($this->_protocol && !class_exists($this->_protocol))
-        {
-            throw new Exception('class ' .$this->_protocol . ' not exist');
         }
         $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg, $flags, $this->_context);
         if(!$this->_mainSocket)
@@ -950,6 +955,9 @@ class Worker
         {
             self::$_globalEvent->add($this->_mainSocket,  EventInterface::EV_READ, array($this, 'acceptUdpConnection'));
         }
+        
+        Timer::init(self::$_globalEvent);
+        
         if($this->onStart)
         {
             $func = $this->onStart;
