@@ -160,8 +160,7 @@ class TcpConnection extends ConnectionInterface
                     self::$statistics['send_fail']++;
                     if($this->onError)
                     {
-                        $func = $this->onError;
-                        $func($this);
+                        call_user_func($this->onError, $this, WORKERMAN_SEND_FAIL, 'client closed');
                     }
                     $this->destroy();
                     return false;
@@ -223,18 +222,18 @@ class TcpConnection extends ConnectionInterface
        
        if($this->_recvBuffer !== '' && $this->onMessage)
        {
-           $func = $this->onMessage;
            // protocol has been set
            if($this->protocol)
            {
                $parser = $this->protocol;
                while($one_request_buffer = $parser::input($this->_recvBuffer, $this))
                {
+                   self::$statistics['total_request']++;
                    $this->_recvBuffer = substr($this->_recvBuffer, strlen($one_request_buffer));
                    self::$statistics['total_request']++;
                    try
                    {
-                       $func($this, $parser::decode($one_request_buffer, $this));
+                       call_user_func($this->onMessage, $this, $parser::decode($one_request_buffer, $this));
                    }
                    catch(Exception $e)
                    {
@@ -244,11 +243,11 @@ class TcpConnection extends ConnectionInterface
                }
                return;
            }
-           // protocol not set
            self::$statistics['total_request']++;
+           // protocol not set
            try 
            {
-               $func($this, $this->_recvBuffer);
+               call_user_func($this->onMessage, $this, $this->_recvBuffer);
            }
            catch(Exception $e)
            {
@@ -316,10 +315,9 @@ class TcpConnection extends ConnectionInterface
     {
        if($this->onClose)
        {
-           $func = $this->onClose;
            try
            {
-               $func($this);
+               call_user_func($this->onClose, $this);
            }
            catch (Exception $e)
            {

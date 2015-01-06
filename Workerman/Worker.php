@@ -960,8 +960,7 @@ class Worker
         
         if($this->onStart)
         {
-            $func = $this->onStart;
-            $func($this);
+            call_user_func($this->onStart, $this);
         }
         self::$_globalEvent->loop();
     }
@@ -974,8 +973,7 @@ class Worker
     {
         if($this->onStop)
         {
-            $func = $this->onStop;
-            $func($this);
+            call_user_func($this->onStop, $this);
         }
         self::$_globalEvent->del($this->_mainSocket, EventInterface::EV_READ);
         @fclose($this->_mainSocket);
@@ -1000,10 +998,9 @@ class Worker
         $connection->onError = $this->onError;
         if($this->onConnect)
         {
-            $func = $this->onConnect;
             try
             {
-                $func($connection);
+                call_user_func($this->onConnect, $connection);
             }
             catch(Exception $e)
             {
@@ -1030,11 +1027,10 @@ class Worker
         $connection = new UdpConnection($socket, $remote_address);
         if($this->onMessage)
         {
-            $func = $this->onMessage;
             $parser = $this->_protocol;
             try
             {
-               $func($connection, $parser::decode($recv_buffer, $connection));
+               call_user_func($this->onMessage, $connection, $parser::decode($recv_buffer, $connection));
             }
             catch(Exception $e)
             {

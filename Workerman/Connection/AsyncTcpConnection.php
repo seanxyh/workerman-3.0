@@ -7,9 +7,6 @@ use Workerman\Events\EventInterface;
 use Workerman\Worker;
 use \Exception;
 
-
-define(ERROR_CONNECT_FAIL, 1);
-
 /**
  * async connection 
  * @author walkor<walkor@workerman.net>
@@ -53,7 +50,7 @@ class AsyncTcpConnection extends TcpConnection
         $this->_socket = stream_socket_client("tcp://$address", $errno, $errstr, 0, STREAM_CLIENT_ASYNC_CONNECT);
         if(!$this->_socket)
         {
-            $this->emitError(ERROR_CONNECT_FAIL, $errstr);
+            $this->emitError(WORKERMAN_CONNECT_FAIL, $errstr);
             return;
         }
         
@@ -64,9 +61,8 @@ class AsyncTcpConnection extends TcpConnection
     {
         if($this->onError)
         {
-            $func = $this->onError;
             try{
-                $func($this, $code, $msg);
+                call_user_func($this->onError, $this, $code, $msg);
             }
             catch(Exception $e)
             {
@@ -90,7 +86,7 @@ class AsyncTcpConnection extends TcpConnection
         }
         else
         {
-            $this->emitError(ERROR_CONNECT_FAIL, 'connect fail, maybe timedout');
+            $this->emitError(WORKERMAN_CONNECT_FAIL, 'connect fail, maybe timedout');
         }
     }
     
@@ -132,8 +128,7 @@ class AsyncTcpConnection extends TcpConnection
                     self::$statistics['send_fail']++;
                     if($this->onError)
                     {
-                        $func = $this->onError;
-                        $func($this);
+                        call_user_func($this->onError, $this, WORKERMAN_SEND_FAIL, 'client close');
                     }
                     $this->destroy();
                     return false;
