@@ -10,12 +10,7 @@
  * @author walkor <walkor@workerman.net>
  */
 
-use \Lib\Context;
 use \Lib\Gateway;
-use \Lib\StatisticClient;
-use \Lib\Store;
-use \Protocols\GatewayProtocol;
-use \Protocols\TextProtocol;
 
 class Event
 {
@@ -25,15 +20,7 @@ class Event
      */
     public static function onGatewayConnect($client_id)
     {
-        Gateway::sendToCurrentClient(TextProtocol::encode("type in your name:"));
-    }
-    
-    /**
-     * 网关有消息时，判断消息是否完整
-     */
-    public static function onGatewayMessage($buffer)
-    {
-        return TextProtocol::check($buffer);
+        Gateway::sendToCurrentClient("type in your name:");
     }
     
    /**
@@ -44,16 +31,14 @@ class Event
     */
    public static function onMessage($client_id, $message)
    {
-        $message_data = TextProtocol::decode($message);
-        
         // **************如果没有$_SESSION['name']说明没有设置过用户名，进入设置用户名逻辑************
         if(empty($_SESSION['name']))
         {
-            $_SESSION['name'] = TextProtocol::decode($message);
+            $_SESSION['name'] = $message;
             Gateway::sendToCurrentClient("chat room login success, your client_id is $client_id, name is {$_SESSION['name']}\nuse client_id:words send message to one user\nuse words send message to all\n");
              
             // 广播所有用户，xxx come
-            return GateWay::sendToAll(TextProtocol::encode("{$_SESSION['name']}[$client_id] come"));
+            return GateWay::sendToAll("{$_SESSION['name']}[$client_id] come");
         }
         
         // ********* 进入聊天逻辑 ****************
@@ -63,11 +48,11 @@ class Event
         if(count($explode_array) > 1)
         {
             $to_client_id = (int)$explode_array[0];
-            GateWay::sendToClient($client_id, TextProtocol::encode($_SESSION['name'] . "[$client_id] said said to [$to_client_id] :" . $explode_array[1]));
-            return GateWay::sendToClient($to_client_id, TextProtocol::encode($_SESSION['name'] . "[$client_id] said to You :" . $explode_array[1]));
+            GateWay::sendToClient($client_id, $_SESSION['name'] . "[$client_id] said said to [$to_client_id] :" . $explode_array[1]);
+            return GateWay::sendToClient($to_client_id, $_SESSION['name'] . "[$client_id] said to You :" . $explode_array[1]);
         }
         // 群聊
-        return GateWay::sendToAll(TextProtocol::encode($_SESSION['name'] . "[$client_id] said :" . $message));
+        return GateWay::sendToAll($_SESSION['name'] . "[$client_id] said :" . $message);
    }
    
    /**
@@ -78,6 +63,6 @@ class Event
    public static function onClose($client_id)
    {
        // 广播 xxx 退出了
-       GateWay::sendToAll(TextProtocol::encode("{$_SESSION['name']}[$client_id] logout"));
+       GateWay::sendToAll("{$_SESSION['name']}[$client_id] logout");
    }
 }

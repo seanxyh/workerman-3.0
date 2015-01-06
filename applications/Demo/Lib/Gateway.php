@@ -26,33 +26,26 @@ class Gateway
     */
    public static function sendToAll($message, $client_id_array = null)
    {
-       $pack = new GatewayProtocol();
-       $pack->header['cmd'] = GatewayProtocol::CMD_SEND_TO_ALL;
-       $pack->header['local_ip'] = Context::$local_ip;
-       $pack->header['local_port'] = Context::$local_port;
-       $pack->header['socket_id'] = Context::$socket_id;
-       $pack->header['client_ip'] = Context::$client_ip;
-       $pack->header['client_port'] = Context::$client_port;
-       $pack->header['client_id'] = Context::$client_id;
-       $pack->body = (string)$message;
+       $gateway_data = GatewayProtocol::$empty;
+       $gateway_data['cmd'] = GatewayProtocol::CMD_SEND_TO_ALL;
+       $gateway_data['body'] = $message;
        
        if($client_id_array)
        {
            $params = array_merge(array('N*'), $client_id_array);
-           $pack->ext_data = call_user_func_array('pack', $params);
+           $gateway_data['ext_data'] = call_user_func_array('pack', $params);
        }
        elseif(empty($client_id_array) && is_array($client_id_array))
        {
            return;
        }
        
-       $buffer = $pack->getBuffer();
        // 如果有businessWorker实例，说明运行在workerman环境中，通过businessWorker中的长连接发送数据
        if(self::$businessWorker)
        {
-           foreach(self::$businessWorker->getGatewayConnections() as $con)
+           foreach(self::$businessWorker->gatewayConnections as $gateway_connection)
            {
-               self::$businessWorker->sendToClient($buffer, $con);
+               $gateway_connection->send($gateway_data);
            }
        }
        // 运行在其它环境中，使用udp向worker发送数据
@@ -61,7 +54,7 @@ class Gateway
            $all_addresses = Store::instance('gateway')->get('GLOBAL_GATEWAY_ADDRESS');
            foreach($all_addresses as $address)
            {
-               self::sendToGateway($address, $buffer);
+               self::sendToGateway($address, $gateway_data);
            }
        }
    }
@@ -71,9 +64,9 @@ class Gateway
     * @param int $client_id 
     * @param string $message
     */
-   public static function sendToClient($clinet_id, $message)
+   public static function sendToClient($client_id, $message)
    {
-       return self::sendCmdAndMessageToClient($clinet_id, GatewayProtocol::CMD_SEND_TO_ONE, $message);
+       return self::sendCmdAndMessageToClient($client_id, GatewayProtocol::CMD_SEND_TO_ONE, $message);
    } 
    
    /**
@@ -92,15 +85,15 @@ class Gateway
     */
    public static function isOnline($client_id)
    {
-       $pack = new GatewayProtocol();
-       $pack->header['cmd'] = \Protocols\GatewayProtocol::CMD_IS_ONLINE;;
-       $pack->header['client_id'] = $client_id;
-       $address = Store::instance('gateway')->get($client_id);
+       $address = Store::instance('gateway')->get('gateway-'.$client_id);
        if(!$address)
        {
            return 0;
        }
-       return self::sendUdpAndRecv($address['local_ip']. ':' .$address['local_port'], $pack->getBuffer());
+       $gateway_data = GatewayProtocol::$empty;
+       $gateway_data['cmd'] = GatewayProtocol::CMD_IS_ONLINE;
+       $gateway_data['client_id'] = $client_id;
+       return self::sendUdpAndRecv($address, GatewayProtocol::encode($gateway_data));
    }
    
    /**
@@ -109,16 +102,17 @@ class Gateway
     */
    public static function getOnlineStatus()
    {
-       $pack = new GatewayProtocol();
-       $pack->header['cmd'] = \Protocols\GatewayProtocol::CMD_GET_ONLINE_STATUS;
-       $buffer = $pack->getBuffer();
+       $gateway_data = GatewayProtocol::$empty;
+       $gateway_data['cmd'] = GatewayProtocol::CMD_GET_ONLINE_STATUS;
+       $gateway_buffer = GatewayProtocol::encode($gateway_data);
+       
        $all_addresses = Store::instance('gateway')->get('GLOBAL_GATEWAY_ADDRESS');
        $client_array = $status_data = array();
        // 批量向所有gateway进程发送CMD_GET_ONLINE_STATUS命令
        foreach($all_addresses as $address)
        {
            $client = stream_socket_client("udp://$address", $errno, $errmsg);
-           if(strlen($buffer) == stream_socket_sendto($client, $buffer))
+           if(strlen($gateway_buffer) === stream_socket_sendto($client, $gateway_buffer))
            {
                $client_id = (int) $client;
                $client_array[$client_id] = $client;
@@ -166,12 +160,12 @@ class Gateway
        // 不是发给当前用户则使用存储中的地址
        else
        {
-           $address = Store::instance('gateway')->get($client_id);
+           $address = Store::instance('gateway')->get('gateway-'.$client_id);
            if(!$address)
            {
                return false;
            }
-           return self::kickAddress($address['local_ip'], $address['local_port'], $address['socket_id']);
+           return self::kickAddress($address, $client_id);
        }
    }
    
@@ -181,7 +175,7 @@ class Gateway
     */
    public static function kickCurrentClient()
    {
-       return self::kickAddress(Context::$local_ip, Context::$local_port, Context::$socket_id);
+       return self::kickAddress(Context::$local_ip.':'.Context::$local_port, Context::$client_id);
    }
    
    /**
@@ -189,13 +183,13 @@ class Gateway
     * @param int $client_id
     * @param string $session_str
     */
-   public static function updateSocketSession($socket_id, $session_str)
+   public static function updateSocketSession($client_id, $session_str)
    {
-       $pack = new GatewayProtocol();
-       $pack->header['cmd'] = GatewayProtocol::CMD_UPDATE_SESSION;
-       $pack->header['socket_id'] = Context::$socket_id;
-       $pack->ext_data = (string)$session_str;
-       return self::sendToGateway(Context::$local_ip . ':' . Context::$local_port, $pack->getBuffer());
+       $gateway_data = GatewayProtocol::$empty;
+       $gateway_data['cmd'] = GatewayProtocol::CMD_UPDATE_SESSION;
+       $gateway_data['client_id'] = $client_id;
+       $gateway_data['ext_data'] = $session_str;
+       return self::sendToGateway(Context::$local_ip . ':' . Context::$local_port, GatewayProtocol::encode($gateway_data));
    }
    
    /**
@@ -207,34 +201,25 @@ class Gateway
     */
    protected static function sendCmdAndMessageToClient($client_id, $cmd , $message)
    {
-       $pack = new GatewayProtocol();
-       $pack->header['cmd'] = $cmd;
        // 如果是发给当前用户则直接获取上下文中的地址
        if($client_id === Context::$client_id || $client_id === null)
        {
-           $pack->header['local_ip'] = Context::$local_ip;
-           $pack->header['local_port'] = Context::$local_port;
-           $pack->header['socket_id'] = Context::$socket_id;
-           $pack->header['client_id'] = Context::$client_id;
+           $address = Context::$local_ip.':'.Context::$local_port;
        }
-       // 不是发给当前用户则使用存储中的地址
        else
        {
-           $address = Store::instance('gateway')->get($client_id);
+           $address = Store::instance('gateway')->get('gateway-'.$client_id);
            if(!$address)
            {
                return false;
            }
-           $pack->header['local_ip'] = $address['local_ip'];
-           $pack->header['local_port'] = $address['local_port'];
-           $pack->header['socket_id'] = $address['socket_id'];
-           $pack->header['client_id'] = $client_id;
        }
-       $pack->header['client_ip'] = Context::$client_ip;
-       $pack->header['client_port'] = Context::$client_port;
-       $pack->body = (string)$message;
+       $gateway_data = GatewayProtocol::$empty;
+       $gateway_data['cmd'] = $cmd;
+       $gateway_data['client_id'] = $client_id;
+       $data['body'] = $message;
        
-       return self::sendToGateway("{$pack->header['local_ip']}:{$pack->header['local_port']}", $pack->getBuffer());
+       return self::sendToGateway($address, GatewayProtocol::encode($gateway_data));
    }
    
    /**
@@ -269,21 +254,21 @@ class Gateway
     * @param string $address
     * @param string $buffer
     */
-   protected static function sendToGateway($address, $buffer)
+   protected static function sendToGateway($address, $gateway_data)
    {
        // 有$businessWorker说明是workerman环境，使用$businessWorker发送数据
        if(self::$businessWorker)
        {
-           $connections = self::$businessWorker->getGatewayConnections();
-           if(!isset($connections[$address]))
+           if(!isset(self::$businessWorker->gatewayConnections[$address]))
            {
-               throw new \Exception("sendToGateway($address, \$buffer) fail \$connections:".var_export($connections, true));
+               return false;
            }
-           return self::$businessWorker->sendToClient($buffer, $connections[$address]);
+           return self::$businessWorker->gatewayConnections[$address]->send(GatewayProtocol::encode($gateway_data));
        }
+       $gateway_buffer = GatewayProtocol::encode($gateway_data);
        // 非workerman环境，使用udp发送数据
        $client = stream_socket_client("udp://$address", $errno, $errmsg);
-       return strlen($buffer) == stream_socket_sendto($client, $buffer);
+       return strlen($gateway_buffer) == stream_socket_sendto($client, $gateway_buffer);
    }
    
    /**
@@ -294,22 +279,12 @@ class Gateway
     * @param string $message
     * @param int $client_id
     */
-   protected  static function kickAddress($local_ip, $local_port, $socket_id)
+   protected  static function kickAddress($address, $client_id)
    {
-       $pack = new GatewayProtocol();
-       $pack->header['cmd'] = GatewayProtocol::CMD_KICK;
-       $pack->header['local_ip'] = $local_ip;
-       $pack->header['local_port'] = $local_port;
-       $pack->header['socket_id'] = $socket_id;
-       if(null !== Context::$client_ip)
-       {
-           $pack->header['client_ip'] = Context::$client_ip;
-           $pack->header['client_port'] = Context::$client_port;
-       }
-       $pack->header['client_id'] =  0;
-       $pack->body = '';
-        
-       return self::sendToGateway("{$pack->header['local_ip']}:{$pack->header['local_port']}", $pack->getBuffer());
+       $gateway_data = GatewayProtocol::$empty;
+       $gateway_data['cmd'] = GatewayProtocol::CMD_KICK;
+       $gateway_data['client_id'] = $client_id;
+       return self::sendToGateway($address, GatewayProtocol::encode($gateway_data));
    }
    
    /**

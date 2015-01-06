@@ -46,7 +46,7 @@ class Gateway extends Worker
         );
         $connection->session = '';
         $this->_clientConnections[$connection->globalClientId] = $connection;
-        $address = array($this->lanIp, $this->lanPort);
+        $address = $this->lanIp.':'.$this->lanPort;
         $this->storeClientAddress($connection->globalClientId, $address);
         if(method_exists('Event','onGatewayConnect'))
         {
