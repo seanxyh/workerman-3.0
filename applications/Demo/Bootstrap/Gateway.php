@@ -37,7 +37,7 @@ class Gateway extends Worker
     public function onClientConnect($connection)
     {
         $connection->globalClientId = $this->createGlobalClientId();
-        $connection->header = array(
+        $connection->gatewayHeader = array(
             'local_ip' => $this->lanIp,
             'local_port' => $this->lanPort,
             'client_ip'=>$connection->getRemoteIp(),
@@ -50,25 +50,19 @@ class Gateway extends Worker
         $this->storeClientAddress($connection->globalClientId, $address);
         if(method_exists('Event','onGatewayConnect'))
         {
-            $this->sendToWorker(GatewayProtocol::CMD_ON_GATEWAY_CONNECTION, $connection->globalClientId);
+            $this->sendToWorker(GatewayProtocol::CMD_ON_GATEWAY_CONNECTION, $connection);
         }
     }
     
     protected function sendToWorker($cmd, $connection, $body = '')
     {
-        $pack = new GatewayProtocol();
-        $pack->header = $connection->header;
-        $pack->header['cmd'] = $cmd;
-        $pack->body = $body;
-        $pack->ext_data = $connection->session;
-        return $this->sendBufferToWorker($pack->getBuffer());
-    }
-    
-    protected function sendBufferToWorker($bin_data)
-    {
+        $gateway_data = $connection->gatewayHeader;
+        $gateway_data['cmd'] = $cmd;
+        $gateway_data['body'] = $body;
+        $gateway_data['ext_data'] = $connection->session;
         if($key = array_rand($this->_workerConnections))
         {
-            if(false === $this->_workerConnections[$key]->send($bin_data))
+            if(false === $this->_workerConnections[$key]->send($gateway_data))
             {
                 $msg = "sendBufferToWorker fail. May be the send buffer are overflow";
                 $this->log($msg);
@@ -173,31 +167,31 @@ class Gateway extends Worker
     
     public function onWorkerMessage($connection, $data)
     {
-        $cmd = $data->header['cmd'];
+        $cmd = $data['cmd'];
         switch($cmd)
         {
             // 向某客户端发送数据
             case GatewayProtocol::CMD_SEND_TO_ONE:
-                if(isset($this->_clientConnections[$data->header['client_id']]))
+                if(isset($this->_clientConnections[$data['client_id']]))
                 {
-                    $this->_clientConnections[$data->header['client_id']]->send($data->body);
+                    $this->_clientConnections[$data['client_id']]->send($data['body']);
                 }
                 break;
             case GatewayProtocol::CMD_KICK:
-                if(isset($this->_clientConnections[$data->header['client_id']]))
+                if(isset($this->_clientConnections[$data['client_id']]))
                 {
-                    $this->_clientConnections[$data->header['client_id']]->close();
+                    $this->_clientConnections[$data['client_id']]->close();
                 }
                 break;
             case GatewayProtocol::CMD_SEND_TO_ALL:
-                if($data->ext_data)
+                if($data['ext_data'])
                 {
-                    $client_id_array = unpack('N*', $data->ext_data);
+                    $client_id_array = unpack('N*', $data['ext_data']);
                     foreach($client_id_array as $client_id)
                     {
                         if(isset($this->_clientConnections[$client_id]))
                         {
-                            $this->_clientConnections[$client_id]->send($data->body);
+                            $this->_clientConnections[$client_id]->send($data['body']);
                         }
                     }
                 }
@@ -205,14 +199,14 @@ class Gateway extends Worker
                 {
                     foreach($this->_clientConnections as $client_connection)
                     {
-                        $client_connection->send($data->body);
+                        $client_connection->send($data['body']);
                     }
                 }
                 break;
             case GatewayProtocol::CMD_UPDATE_SESSION:
-                if(isset($this->_clientConnections[$data->header['client_id']]))
+                if(isset($this->_clientConnections[$data['client_id']]))
                 {
-                    $this->_clientConnections[$data->header['client_id']]->session = $data->ext_data;
+                    $this->_clientConnections[$data['client_id']]->session = $data['ext_data'];
                 }
                 break;
             case GatewayProtocol::CMD_GET_ONLINE_STATUS:
@@ -220,7 +214,7 @@ class Gateway extends Worker
                 $connection->send($online_status);
                 break;
             case GatewayProtocol::CMD_IS_ONLINE:
-                $connection->send((int)isset($this->_clientConnections[$data->header['client_id']]));
+                $connection->send((int)isset($this->_clientConnections[$data['client_id']]));
                 break;
             default :
                 $err_msg = "gateway inner pack err cmd=$cmd";

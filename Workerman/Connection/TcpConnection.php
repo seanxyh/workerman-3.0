@@ -226,11 +226,18 @@ class TcpConnection extends ConnectionInterface
            if($this->protocol)
            {
                $parser = $this->protocol;
-               while($one_request_buffer = $parser::input($this->_recvBuffer, $this))
+               while(1)
                {
+                   $package_len = $parser::input($this->_recvBuffer, $this);
+                   $recv_len = strlen($this->_recvBuffer);
+                   // we need more buffer
+                   if($package_len>$recv_len)
+                   {
+                       break;
+                   }
                    self::$statistics['total_request']++;
-                   $this->_recvBuffer = substr($this->_recvBuffer, strlen($one_request_buffer));
-                   self::$statistics['total_request']++;
+                   $one_request_buffer = substr($this->_recvBuffer, 0, $package_len);
+                   $this->_recvBuffer = substr($this->_recvBuffer, $package_len);
                    try
                    {
                        call_user_func($this->onMessage, $this, $parser::decode($one_request_buffer, $this));

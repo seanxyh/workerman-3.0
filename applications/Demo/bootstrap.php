@@ -2,7 +2,7 @@
 require_once __DIR__ . '/Bootstrap/Gateway.php';
 require_once __DIR__ . '/Bootstrap/BusinessWorker.php';
 
-$gateway = new Gateway("tcp://0.0.0.0:8480");
+$gateway = new Gateway("TextProtocol://0.0.0.0:8480");
 
 $gateway->name = 'Gateway';
 

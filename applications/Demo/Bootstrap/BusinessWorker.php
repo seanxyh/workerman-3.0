@@ -23,13 +23,13 @@ class BusinessWorker extends Worker
         Gateway::setBusinessWorker($this);
     }
     
-    public function onGatewayMessage($packageage)
+    public function onGatewayMessage($connection, $data)
     {
-        Context::$client_ip = $package->header['client_ip'];
-        Context::$client_port = $package->header['client_port'];
-        Context::$local_ip = $package->header['local_ip'];
-        Context::$local_port = $package->header['local_port'];
-        Context::$client_id = $package->header['client_id'];
+        Context::$client_ip = $data['client_ip'];
+        Context::$client_port = $data['client_port'];
+        Context::$local_ip = $data['local_ip'];
+        Context::$local_port = $data['local_port'];
+        Context::$client_id = $data['client_id'];
         $_SERVER = array(
                 'REMOTE_ADDR' => Context::$client_ip,
                 'REMOTE_PORT' => Context::$client_port,
@@ -47,7 +47,7 @@ class BusinessWorker extends Worker
         }
         // 备份一次$package->ext_data，请求处理完毕后判断session是否和备份相等，不相等就更新session
         $session_str_copy = $package->ext_data;
-        $cmd = $package->header['cmd'];
+        $cmd = $data['cmd'];
     
         try{
             switch($cmd)

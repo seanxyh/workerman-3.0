@@ -13,16 +13,14 @@ class TextProtocol
      * @param string $buffer
      * @return number
      */
-    public static function check($buffer)
+    public static function input($buffer)
     {
-        // 判断最后一个字符是否是回车("\n")
-        if($buffer[strlen($buffer)-1] === "\n")
+        $pos = strpos($buffer, "\n");
+        if($pos !== false)
         {
-            return 0;
+            return substr($buffer,0, $pos+1);
         }
-        
-        // 说明还有请求数据没收到，但是由于不知道还有多少数据没收到，所以只能返回1，因为有可能下一个字符就是回车（"\n"）
-        return 1;
+        return null;
     }
 
     /**
@@ -32,7 +30,6 @@ class TextProtocol
      */
     public static function encode($data)
     {
-        // 选用json格式化数据
         return $data."\n";
     }
 

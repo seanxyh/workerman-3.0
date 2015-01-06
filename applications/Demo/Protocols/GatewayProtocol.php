@@ -9,7 +9,6 @@ namespace Protocols;
  *     unsigned char     cmd,//命令字
  *     unsigned int        local_ip,
  *     unsigned short    local_port,
- *     unsigned int        socket_id,
  *     unsigned int        client_ip,
  *     unsigned short    client_port,
  *     unsigned int        client_id,
@@ -58,83 +57,37 @@ class GatewayProtocol
     const HEAD_LEN = 25;
      
     /**
-     * 协议头
-     * @var array
-     */
-    public $header = array(
-        'pack_len'       => self::HEAD_LEN,
-        'cmd'              => 0,
-        'local_ip'         => '',
-        'local_port'     => 0,
-        'client_ip'        => '',
-        'client_port'    => 0,
-        'client_id'        => 0,
-        'ext_len'          => 0,
-    );
-    
-    /**
-     * 扩展数据，
-     * gateway发往worker时这里存储的是session字符串
-     * worker发往gateway时，并且CMD_UPDATE_SESSION时存储的是session字符串
-     * worker发往gateway时，并且CMD_SEND_TO_ALL时存储的是接收的client_id序列，可能是空（代表向所有人发）
-     * @var string
-     */
-    public $ext_data = '';
-    
-    /**
-     * 包体
-     * @var string
-     */
-    public $body = '';
-    
-    /**
-     * 初始化
-     * @return void
-     */
-    public function __construct($buffer = null)
-    {
-        if($buffer)
-        {
-            $data = self::decode($buffer);
-            $this->ext_data = $data['ext_data'];
-            $this->body = $data['body'];
-            unset($data['ext_data'], $data['body']);
-            $this->header = $data;
-        }
-    }
-    
-    /**
-     * 判断数据包是否都到了
+     * 返回包长度
      * @param string $buffer
-     * @return int int=0数据是完整的 int>0数据不完整，还要继续接收int字节
+     * @return int return current package length
      */
     public static function input($buffer)
     {
-        $len = strlen($buffer);
-        // 至少需要四字节才能解出包的长度
-        if($len < 4)
+        if(strlen($buffer) < self::HEAD_LEN)
         {
-            return ;
+            return self::HEAD_LEN;
         }
         
         $data = unpack("Npack_len", $buffer);
-        return $data['pack_len'] - $len;
+        return $data['pack_len'];
     }
     
     /**
      * 获取整个包的buffer
-     * @param string $data
+     * @param array $data
      * @return string
      */
-    public function encode()
+    public static function encode($data)
     {
-        $this->header['ext_len'] = strlen($this->ext_data);
-        $this->header['pack_len'] = self::HEAD_LEN + $this->header['ext_len'] + strlen($this->body);
-        return pack("NCNnNnNN",  $this->header['pack_len'],
-                        $this->header['cmd'], ip2long($this->header['local_ip']), 
-                        $this->header['local_port'], ip2long($this->header['client_ip']), 
-                        $this->header['client_port'], $this->header['client_id'],
-                       $this->header['ext_len']) . $this->ext_data . $this->body;
+        $data['ext_len'] = strlen($this->ext_data);
+        $data['pack_len'] = self::HEAD_LEN + $data['ext_len'] + strlen($this->body);
+        $ext_len = strlen($data['ext_data']);
+        $package_len = self::HEAD_LEN + $ext_len + strlen($data['body']);
+        return pack("NCNnNnNN",  $package_len,
+                        $data['cmd'], ip2long($data['local_ip']), 
+                        $data['local_port'], ip2long($data['client_ip']), 
+                        $data['client_port'], $data['client_id'],
+                       $ext_len) . $data['ext_data'] . $data['body'];
     }
     
     /**
