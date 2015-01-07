@@ -21,8 +21,6 @@ class BusinessWorker extends Worker
     public function __construct($socket_name, $context_option = array())
     {
         $this->onStart = array($this, 'onStart');
-        $this->onMessage = array($this, 'onGatewayMessage');
-        $this->onClose = array($this, 'onClose');
         parent::__construct($socket_name, $context_option);
     }
     
@@ -109,6 +107,8 @@ class BusinessWorker extends Worker
                 $gateway_connection = new AsyncTcpConnection("GatewayProtocol://$addr", self::$_globalEvent);
                 $gateway_connection->remoteAddress = $addr;
                 $gateway_connection->onConnect = array($this, 'onConnectGateway');
+                $gateway_connection->onMessage = array($this, 'onGatewayMessage');
+                $gateway_connection->onClose = array($this, 'onClose');
                 $gateway_connection->onError = array($this, 'onError');
             }
         }
