@@ -47,7 +47,7 @@ class AsyncTcpConnection extends TcpConnection
             }
         }
         $this->_event = $event;
-        $this->_socket = stream_socket_client("tcp://$address", $errno, $errstr, 0, STREAM_CLIENT_ASYNC_CONNECT);
+        $this->_socket = stream_socket_client("tcp:$address", $errno, $errstr, 0, STREAM_CLIENT_ASYNC_CONNECT);
         if(!$this->_socket)
         {
             $this->emitError(WORKERMAN_CONNECT_FAIL, $errstr);

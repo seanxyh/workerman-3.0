@@ -7,6 +7,7 @@ if(!ini_get('date.timezone') )
 }
 ini_set('display_errors', 'on');
 
+require_once __DIR__ . '/constants.php';
 require_once __DIR__ . '/Connection/ConnectionInterface.php';
 require_once __DIR__ . '/Connection/TcpConnection.php';
 require_once __DIR__ . '/Connection/AsyncTcpConnection.php';
@@ -16,6 +17,7 @@ require_once __DIR__ . '/Events/EventInterface.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
 require_once __DIR__ . '/ProtocolInterface.php';
+
 
 use Workerman\Events\Libevent;
 use Workerman\Events\Select;
