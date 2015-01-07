@@ -923,6 +923,18 @@ class Worker
             throw new Exception($errmsg);
         }
         stream_set_blocking($this->_mainSocket, 0);
+        
+        if(self::$_globalEvent)
+        {
+            if($this->transport !== 'udp')
+            {
+                self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'acceptConnection'));
+            }
+            else
+            {
+                self::$_globalEvent->add($this->_mainSocket,  EventInterface::EV_READ, array($this, 'acceptUdpConnection'));
+            }
+        }
     }
     
     /**
@@ -949,16 +961,16 @@ class Worker
             {
                 self::$_globalEvent = new Select();
             }
+            if($this->transport !== 'udp')
+            {
+                self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'acceptConnection'));
+            }
+            else
+            {
+                self::$_globalEvent->add($this->_mainSocket,  EventInterface::EV_READ, array($this, 'acceptUdpConnection'));
+            }
         }
         self::reinstallSignal();
-        if($this->transport !== 'udp')
-        {
-            self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'acceptConnection'));
-        }
-        else
-        {
-            self::$_globalEvent->add($this->_mainSocket,  EventInterface::EV_READ, array($this, 'acceptUdpConnection'));
-        }
         
         Timer::init(self::$_globalEvent);
         
