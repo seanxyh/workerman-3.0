@@ -1,5 +1,6 @@
 <?php
 use Workerman\Worker;
+use Workerman\Connection\AsyncTcpConnection;
 use Workerman\Timer;
 use Workerman\Lock;
 use \Lib\Store;
