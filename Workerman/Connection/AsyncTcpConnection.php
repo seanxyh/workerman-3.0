@@ -54,7 +54,7 @@ class AsyncTcpConnection extends TcpConnection
             return;
         }
         
-        $this->_event->add($this->_socket, EventInterface::EV_READ, array($this, 'checkConnection'));
+        $this->_event->add($this->_socket, EventInterface::EV_WRITE, array($this, 'checkConnection'));
     }
     
     protected function emitError($code, $msg)
@@ -73,14 +73,14 @@ class AsyncTcpConnection extends TcpConnection
     
     public function checkConnection($socket)
     {
-        $this->_event->del($this->_socket, EventInterface::EV_READ);
+        $this->_event->del($this->_socket, EventInterface::EV_WRITE);
         // php bug ?
         if(!feof($this->_socket) && !feof($this->_socket))
         {
             $this->_event->add($this->_socket, EventInterface::EV_READ, array($this, 'baseRead'));
             if($this->_sendBuffer)
             {
-                $this->_event->add($this->_socket, EventInterface::EV_READ, array($this, 'baseWrite'));
+                $this->_event->add($this->_socket, EventInterface::EV_WRITE, array($this, 'baseWrite'));
             }
             $this->_status = self::STATUS_ESTABLISH;
             if($this->onConnect)
