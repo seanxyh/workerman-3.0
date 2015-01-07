@@ -90,8 +90,6 @@ class GatewayProtocol
      */
     public static function encode($data)
     {
-        $data['ext_len'] = strlen($this->ext_data);
-        $data['pack_len'] = self::HEAD_LEN + $data['ext_len'] + strlen($this->body);
         $ext_len = strlen($data['ext_data']);
         $package_len = self::HEAD_LEN + $ext_len + strlen($data['body']);
         return pack("NCNnNnNN",  $package_len,
