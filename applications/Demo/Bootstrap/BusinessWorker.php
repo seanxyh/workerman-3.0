@@ -36,6 +36,7 @@ class BusinessWorker extends Worker
     
     public function onGatewayMessage($connection, $data)
     {
+        self::$statistics['total_request']++;
         Context::$client_ip = $data['client_ip'];
         Context::$client_port = $data['client_port'];
         Context::$local_ip = $data['local_ip'];

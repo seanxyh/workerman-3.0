@@ -31,6 +31,7 @@ class Gateway extends Worker
     
     public function onClientMessage($connection, $data)
     {
+        self::$statistics['total_request']++;
         $this->sendToWorker(GatewayProtocol::CMD_ON_MESSAGE, $connection, $data);
     }
     

@@ -83,6 +83,18 @@ class AsyncTcpConnection extends TcpConnection
                 $this->_event->add($this->_socket, EventInterface::EV_READ, array($this, 'baseWrite'));
             }
             $this->_status = self::STATUS_ESTABLISH;
+            if($this->onConnect)
+            {
+                try 
+                {
+                    call_user_func($this->onConnect, $this);
+                }
+                catch(Exception $e)
+                {
+                    self::$statistics['throw_exception']++;
+                    echo $e;
+                }
+            }
         }
         else
         {
