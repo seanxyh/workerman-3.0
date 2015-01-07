@@ -16,6 +16,15 @@ class BusinessWorker extends Worker
     
     public $badGatewayAddress = array();
     
+    public function __construct($socket_name, $context_option = array())
+    {
+        $this->onStart = array($this, 'onStart');
+        $this->onMessage = array($this, 'onGatewayMessage');
+        $this->onClose = array($this, 'onClose');
+        parent::__construct($socket_name, $context_option);
+    }
+    
+    
     protected function onStart()
     {
         Timer::add(1, array($this, 'checkGatewayConnections'));
@@ -37,16 +46,16 @@ class BusinessWorker extends Worker
                 'GATEWAY_PORT'  => Context::$local_port,
                 'GATEWAY_CLIENT_ID' => Context::$client_id,
         );
-        if($package->ext_data != '')
+        if($data['ext_data'] != '')
         {
-            $_SESSION = Context::sessionDecode($package->ext_data);
+            $_SESSION = Context::sessionDecode($data['ext_data']);
         }
         else
         {
             $_SESSION = null;
         }
-        // 备份一次$package->ext_data，请求处理完毕后判断session是否和备份相等，不相等就更新session
-        $session_str_copy = $package->ext_data;
+        // 备份一次$data['ext_data']，请求处理完毕后判断session是否和备份相等，不相等就更新session
+        $session_str_copy = $data['ext_data'];
         $cmd = $data['cmd'];
     
         try{
@@ -56,7 +65,7 @@ class BusinessWorker extends Worker
                     Event::onGatewayConnect(Context::$client_id);
                     break;
                 case GatewayProtocol::CMD_ON_MESSAGE:
-                    Event::onMessage(Context::$client_id, $package->body);
+                    Event::onMessage(Context::$client_id, $data['body']);
                     break;
                 case GatewayProtocol::CMD_ON_CLOSE:
                     Event::onClose(Context::$client_id);
@@ -76,6 +85,11 @@ class BusinessWorker extends Worker
         }
     
         Context::clear();
+    }
+    
+    public function onClose($connection)
+    {
+        unset($this->gatewayConnections[$connection->remoteAddress]);
     }
     
     public function checkGatewayConnections()
