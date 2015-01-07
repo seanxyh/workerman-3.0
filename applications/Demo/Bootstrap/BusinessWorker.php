@@ -6,6 +6,7 @@ use Workerman\Lock;
 use \Lib\Store;
 use \Protocols\GatewayProtocol;
 use \Lib\Context;
+use \Lib\Gateway;
 
 require_once __DIR__ . '/../Lib/Autoloader.php';
 
