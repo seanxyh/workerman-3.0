@@ -16,11 +16,7 @@ class TextProtocol
     public static function input($buffer)
     {
         $pos = strpos($buffer, "\n");
-        if($pos !== false)
-        {
-            return substr($buffer,0, $pos+1);
-        }
-        return null;
+        return $pos === false ? strlen($buffer) + 1 : $pos+1;
     }
 
     /**

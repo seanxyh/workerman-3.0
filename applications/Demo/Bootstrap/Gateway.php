@@ -71,7 +71,7 @@ class Gateway extends Worker
         }
         else
         {
-            $msg = "sendBufferToWorker fail. the Connections between Gateway and BusinessWorker are not ready";
+            $msg = "endBufferToWorker fail. the connections between Gateway and BusinessWorker are not ready";
             $this->log($msg);
             return false;
         }
