@@ -143,8 +143,10 @@ class Gateway extends Worker
         }
     
         $this->_innerTcpWorker = new Worker("GatewayProtocol://{$this->lanIp}:{$this->lanPort}");
+        $this->_innerTcpWorker->listen();
         $this->_innerUdpWorker = new Worker("GatewayProtocol://{$this->lanIp}:{$this->lanPort}");
         $this->_innerUdpWorker->transport = 'udp';
+        $this->_innerUdpWorker->listen();
     
         $this->_innerTcpWorker->onMessage = array($this, 'onWorkerMessage');
         $this->_innerUdpWorker->onMessage = array($this, 'onWorkerMessage');
