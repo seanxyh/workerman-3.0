@@ -217,7 +217,7 @@ class Gateway
        $gateway_data = GatewayProtocol::$empty;
        $gateway_data['cmd'] = $cmd;
        $gateway_data['client_id'] = $client_id;
-       $data['body'] = $message;
+       $gateway_data['body'] = $message;
        
        return self::sendToGateway($address, GatewayProtocol::encode($gateway_data));
    }
