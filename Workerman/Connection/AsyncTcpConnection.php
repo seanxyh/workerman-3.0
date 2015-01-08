@@ -77,6 +77,7 @@ class AsyncTcpConnection extends TcpConnection
         // php bug ?
         if(!feof($this->_socket) && !feof($this->_socket))
         {
+            stream_set_blocking($this->_socket, 0);
             $this->_event->add($this->_socket, EventInterface::EV_READ, array($this, 'baseRead'));
             if($this->_sendBuffer)
             {
