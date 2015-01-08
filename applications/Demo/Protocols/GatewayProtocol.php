@@ -63,7 +63,7 @@ class GatewayProtocol
         'client_ip' => '0.0.0.0',
         'client_port' => 0,
         'client_id' => 0,
-        'ext_data' => 0,
+        'ext_data' => '',
         'body' => '',
     );
      
