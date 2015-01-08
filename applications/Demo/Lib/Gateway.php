@@ -276,7 +276,7 @@ class Gateway
     * 踢掉某个网关的socket
     * @param string $local_ip
     * @param int $local_port
-    * @param int $socket_id
+    * @param int $client_id
     * @param string $message
     * @param int $client_id
     */

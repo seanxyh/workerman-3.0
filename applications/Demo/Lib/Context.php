@@ -17,11 +17,6 @@ class Context
      */
     public static $local_port;
     /**
-     * 内部通讯socket_id
-     * @var int
-     */
-    public static $socket_id;
-    /**
      * 客户端ip
      * @var string
      */

@@ -81,7 +81,7 @@ class BusinessWorker extends Worker
         $session_str_now = $_SESSION !== null ? Context::sessionEncode($_SESSION) : '';
         if($session_str_copy != $session_str_now)
         {
-            Gateway::updateSocketSession(Context::$socket_id, $session_str_now);
+            Gateway::updateSocketSession(Context::$client_id, $session_str_now);
         }
     
         Context::clear();
