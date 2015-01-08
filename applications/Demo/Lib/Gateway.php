@@ -93,7 +93,7 @@ class Gateway
        $gateway_data = GatewayProtocol::$empty;
        $gateway_data['cmd'] = GatewayProtocol::CMD_IS_ONLINE;
        $gateway_data['client_id'] = $client_id;
-       return self::sendUdpAndRecv($address, GatewayProtocol::encode($gateway_data));
+       return self::sendUdpAndRecv($address, $gateway_data);
    }
    
    /**
@@ -189,7 +189,7 @@ class Gateway
        $gateway_data['cmd'] = GatewayProtocol::CMD_UPDATE_SESSION;
        $gateway_data['client_id'] = $client_id;
        $gateway_data['ext_data'] = $session_str;
-       return self::sendToGateway(Context::$local_ip . ':' . Context::$local_port, GatewayProtocol::encode($gateway_data));
+       return self::sendToGateway(Context::$local_ip . ':' . Context::$local_port, $gateway_data);
    }
    
    /**
@@ -219,7 +219,7 @@ class Gateway
        $gateway_data['client_id'] = $client_id;
        $gateway_data['body'] = $message;
        
-       return self::sendToGateway($address, GatewayProtocol::encode($gateway_data));
+       return self::sendToGateway($address, $gateway_data);
    }
    
    /**
@@ -228,8 +228,9 @@ class Gateway
     * @param string $message
     * @return boolean
     */
-   protected static function sendUdpAndRecv($address , $buffer)
+   protected static function sendUdpAndRecv($address , $data)
    {
+       $buffer = GatewayProtocol::encode($data);
        // 非workerman环境，使用udp发送数据
        $client = stream_socket_client("udp://$address", $errno, $errmsg);
        if(strlen($buffer) == stream_socket_sendto($client, $buffer))
@@ -265,8 +266,8 @@ class Gateway
            }
            return self::$businessWorker->gatewayConnections[$address]->send($gateway_data);
        }
-       $gateway_buffer = GatewayProtocol::encode($gateway_data);
        // 非workerman环境，使用udp发送数据
+       $gateway_buffer = GatewayProtocol::encode($gateway_data);
        $client = stream_socket_client("udp://$address", $errno, $errmsg);
        return strlen($gateway_buffer) == stream_socket_sendto($client, $gateway_buffer);
    }
@@ -284,7 +285,7 @@ class Gateway
        $gateway_data = GatewayProtocol::$empty;
        $gateway_data['cmd'] = GatewayProtocol::CMD_KICK;
        $gateway_data['client_id'] = $client_id;
-       return self::sendToGateway($address, GatewayProtocol::encode($gateway_data));
+       return self::sendToGateway($address, $gateway_data);
    }
    
    /**
