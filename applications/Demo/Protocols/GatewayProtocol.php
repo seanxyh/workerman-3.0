@@ -104,7 +104,7 @@ class GatewayProtocol
      * @param string $buffer
      * @return array
      */    
-    protected static function decode($buffer)
+    public static function decode($buffer)
     {
         $data = unpack("Npack_len/Ccmd/Nlocal_ip/nlocal_port/Nclient_ip/nclient_port/Nclient_id/Next_len", $buffer);
         $data['local_ip'] = long2ip($data['local_ip']);
