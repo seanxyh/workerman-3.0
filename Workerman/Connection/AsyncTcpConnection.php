@@ -36,13 +36,13 @@ class AsyncTcpConnection extends TcpConnection
         if($scheme != 'tcp')
         {
             $scheme = ucfirst($scheme);
-            $this->_protocol = '\\Protocols\\'.$scheme;;
-            if(!class_exists($this->_protocol))
+            $this->protocol = '\\Protocols\\'.$scheme;;
+            if(!class_exists($this->protocol))
             {
-                $this->_protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
-                if(!class_exists($this->_protocol))
+                $this->protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
+                if(!class_exists($this->protocol))
                 {
-                    throw new Exception('class ' .$this->_protocol . ' not exist');
+                    throw new Exception('class ' .$this->protocol . ' not exist');
                 }
             }
         }
