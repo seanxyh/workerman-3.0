@@ -263,7 +263,7 @@ class Gateway
            {
                return false;
            }
-           return self::$businessWorker->gatewayConnections[$address]->send(GatewayProtocol::encode($gateway_data));
+           return self::$businessWorker->gatewayConnections[$address]->send($gateway_data);
        }
        $gateway_buffer = GatewayProtocol::encode($gateway_data);
        // 非workerman环境，使用udp发送数据
