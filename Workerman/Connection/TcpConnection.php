@@ -131,11 +131,12 @@ class TcpConnection extends ConnectionInterface
     /**
      * send buffer to client
      * @param string $send_buffer
+     * @param bool $raw
      * @return void|boolean
      */
-    public function send($send_buffer)
+    public function send($send_buffer, $raw = false)
     {
-        if($this->protocol)
+        if(false === $raw && $this->protocol)
         {
             $parser = $this->protocol;
             $send_buffer = $parser::encode($send_buffer, $this);
