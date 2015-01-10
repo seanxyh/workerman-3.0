@@ -93,8 +93,12 @@ class UdpConnection extends ConnectionInterface
      * close the connection
      * @void
      */
-    public function close()
+    public function close($data = null)
     {
+        if($data !== null)
+        {
+            $this->send($data);
+        }
         return true;
     }
 }

@@ -62,5 +62,5 @@ abstract class  ConnectionInterface
      * close the connection
      * @void
      */
-    abstract public function close();
+    abstract public function close($data = null);
 }
