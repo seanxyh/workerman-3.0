@@ -7,7 +7,7 @@ class Http implements \Workerman\ProtocolInterface
     {
         if(!strpos($recv_buffer, "\r\n\r\n"))
         {
-            return;
+            return PHP_INT_MAX;
         }
         
         list($header, $body) = explode("\r\n\r\n", $recv_buffer, 2);
@@ -21,17 +21,17 @@ class Http implements \Workerman\ProtocolInterface
             }
             else
             {
-                return $recv_buffer;
+                return PHP_INT_MAX;
             }
             if($content_lenght <= strlen($body))
             {
-                return $header."\r\n\r\n".$body;
+                return strlen($header)+4+$content_lenght;
             }
-            return;
+            return PHP_INT_MAX;
         }
         else
         {
-            return $header."\r\n\r\n";
+            return strlen($header)+4;
         }
         return;
     }
