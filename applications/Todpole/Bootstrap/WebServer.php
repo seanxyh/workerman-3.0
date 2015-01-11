@@ -46,6 +46,7 @@ class WebServer extends Worker
      */
     public function __construct($socket_name, $context_option = array())
     {
+        $this->onStart = array($this, 'onStart');
         $this->onMessage = array($this, 'onMessage');
         $this->name = 'WebServer';
         list($scheme, $address) = explode(':', $socket_name, 2);
