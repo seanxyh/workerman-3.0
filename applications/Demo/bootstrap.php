@@ -1,4 +1,5 @@
 <?php 
+return ;
 require_once __DIR__ . '/Bootstrap/Gateway.php';
 require_once __DIR__ . '/Bootstrap/BusinessWorker.php';
 
