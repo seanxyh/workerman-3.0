@@ -28,4 +28,4 @@ $web = new WebServer("http://0.0.0.0:8383");
 
 $web->count = 2;
 
-$web->addRoot('www.your_domain.com', __DIR__.'/../Web');
+$web->addRoot('www.your_domain.com', __DIR__.'/Web');
