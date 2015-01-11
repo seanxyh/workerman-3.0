@@ -46,10 +46,6 @@ class WebServer extends Worker
      */
     public function __construct($socket_name, $context_option = array())
     {
-        if(empty($this->serverRoot))
-        {
-            throw new Exception('server root not set, please use WebServer::addRoot($domain, $root_path) to set server root path');
-        }
         $this->onMessage = array($this, 'onMessage');
         $this->name = 'WebServer';
         list($scheme, $address) = explode(':', $socket_name, 2);
@@ -61,6 +57,10 @@ class WebServer extends Worker
      */
     public function onStart()
     {
+        if(empty($this->serverRoot))
+        {
+            throw new Exception('server root not set, please use WebServer::addRoot($domain, $root_path) to set server root path');
+        }
         // 初始化HttpCache
         HttpCache::init();
         // 初始化mimeMap
