@@ -30,7 +30,8 @@ class Websocket
             if(0 === strpos($buffer, 'GET'))
             {
                 // 判断\r\n\r\n边界
-                if(!strpos($buffer, "\r\n\r\n"))
+                $heder_end_pos = strpos($buffer, "\r\n\r\n");
+                if(!$heder_end_pos)
                 {
                     return PHP_INT_MAX;
                 }
@@ -48,7 +49,9 @@ class Websocket
                 $new_message .= "Connection: Upgrade\r\n";
                 $new_message .= "Sec-WebSocket-Accept: " . $new_key . "\r\n\r\n";
                 $connection->handshake = true;
-                return $connection->send($new_message, true);
+                $connection->consumeRecvBuffer(strlen($buffer));
+                $connection->send($new_message, true);
+                return PHP_INT_MAX;
             }
             // 如果是flash的policy-file-request
             elseif(0 === strpos($buffer,'<polic'))
@@ -58,16 +61,20 @@ class Websocket
                     return PHP_INT_MAX;
                 }
                 $policy_xml = '<?xml version="1.0"?><cross-domain-policy><site-control permitted-cross-domain-policies="all"/><allow-access-from domain="*" to-ports="*"/></cross-domain-policy>'."\0";
-               return $connection->send($policy_xml, true);
+                $connection->send($policy_xml, true);
+                $connection->consumeRecvBuffer(strlen($buffer));
+                return PHP_INT_MAX;
             }
             // error
-            return $connection->close();
+            $connection->close();
+            return PHP_INT_MAX;
         }
         
         // close package
         if(ord($buffer[0]) & 0xf == 8)
         {
-            return $connection->close();
+            $connection->close();
+            return PHP_INT_MAX;
         }
         
         // websocket二进制数据

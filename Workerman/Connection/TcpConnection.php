@@ -301,6 +301,15 @@ class TcpConnection extends ConnectionInterface
            }
         }
     }
+    
+    /**
+     * consume recvBuffer
+     * @param int $length
+     */
+    public function consumeRecvBuffer($length)
+    {
+        $this->_recvBuffer = substr($this->_recvBuffer, $length);
+    }
 
     /**
      * close the connection
