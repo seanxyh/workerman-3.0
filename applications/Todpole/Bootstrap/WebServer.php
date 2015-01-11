@@ -171,7 +171,7 @@ class WebServer extends Worker
                 }
                 $content = ob_get_clean();
                 ini_set('display_errors', 'on');
-                $this->close($content);
+                $connection->close($content);
                 chdir($cwd);
                 return ;
             }
@@ -209,13 +209,13 @@ class WebServer extends Worker
                 Http::header("Last-Modified: $modified_time");
             }
             // 发送给客户端
-           return $this->close($file_content);
+           return $connection->close(file_get_contents($file));
         }
         else 
         {
             // 404
             Http::header("HTTP/1.1 404 Not Found");
-            return $this->close('<html><head><title>404 页面不存在</title></head><body><center><h3>404 Not Found</h3></center></body></html>');
+            return $connection->close('<html><head><title>404 页面不存在</title></head><body><center><h3>404 Not Found</h3></center></body></html>');
         }
     }
 }
