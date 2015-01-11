@@ -19,4 +19,3 @@ $worker = new BusinessWorker("tcp://0.0.0.0:8481");
 $worker->name = 'BusinessWorker';
 
 $worker->count = 4;
-
