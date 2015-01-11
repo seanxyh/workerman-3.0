@@ -24,7 +24,7 @@ class Websocket
         }
         
         // 还没有握手
-        if(!$connection->handshake)
+        if(empty($connection->handshake))
         {
             // 握手阶段客户端发送HTTP协议
             if(0 === strpos($buffer, 'GET'))
