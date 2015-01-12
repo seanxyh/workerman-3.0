@@ -33,3 +33,10 @@ Worker::runAll();
 
 run width
 php test.php start
+
+## available commands
+php test.php stop  
+php test.php restart  
+php test.php status  
+php test.php reload  
+
