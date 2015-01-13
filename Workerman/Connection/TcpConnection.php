@@ -221,7 +221,7 @@ class TcpConnection extends ConnectionInterface
           $this->_recvBuffer .= $buffer; 
        }
        
-       if($this->_recvBuffer !== '' && $this->onMessage)
+       if($this->_recvBuffer && $this->onMessage)
        {
            // protocol has been set
            if($this->protocol)
