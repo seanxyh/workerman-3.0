@@ -105,7 +105,7 @@ class Gateway extends Worker
     public function onClientClose($connection)
     {
         $this->sendToWorker(GatewayProtocol::CMD_ON_CLOSE, $connection);
-        $this->deleteClientAddress($connection->globalClientId);
+        $this->delClientAddress($connection->globalClientId);
         unset($this->_clientConnections[$connection->globalClientId]);
     }
     

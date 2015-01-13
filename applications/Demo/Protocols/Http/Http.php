@@ -7,7 +7,7 @@ class Http implements \Workerman\ProtocolInterface
     {
         if(!strpos($recv_buffer, "\r\n\r\n"))
         {
-            return;
+            return PHP_INT_MAX;
         }
         
         list($header, $body) = explode("\r\n\r\n", $recv_buffer, 2);
@@ -21,17 +21,17 @@ class Http implements \Workerman\ProtocolInterface
             }
             else
             {
-                return $recv_buffer;
+                return PHP_INT_MAX;
             }
             if($content_lenght <= strlen($body))
             {
-                return $header."\r\n\r\n".$body;
+                return strlen($header)+4+$content_lenght;
             }
-            return;
+            return PHP_INT_MAX;
         }
         else
         {
-            return $header."\r\n\r\n";
+            return strlen($header)+4;
         }
         return;
     }
@@ -196,162 +196,171 @@ class Http implements \Workerman\ProtocolInterface
         HttpCache::$header = array();
         
         // save session
-        session_write_close();
+        self::sessionWriteClose();
         
         // the whole http package
         return $header.$content;
     }
-}
-/**
- * 设置http头
- * @return bool
- */
-function header($content, $replace = true, $http_response_code = 0)
-{
-    if(strpos($content, 'HTTP') === 0)
+    
+    /**
+     * 设置http头
+     * @return bool
+     */
+    function header($content, $replace = true, $http_response_code = 0)
     {
-        $key = 'Http-Code';
-    }
-    else
-    {
-        $key = strstr($content, ":", true);
-        if(empty($key))
+        if(strpos($content, 'HTTP') === 0)
         {
-            return false;
+            $key = 'Http-Code';
         }
-    }
-    
-    if('location' == strtolower($key) && !$http_response_code)
-    {
-        return header($content, true, 302);
-    }
-    
-    if(isset(HttpCache::$codes[$http_response_code]))
-    {
-        HttpCache::$header['Http-Code'] = "HTTP/1.1 $http_response_code " .  HttpCache::$codes[$http_response_code];
-        if($key == 'Http-Code')
+        else
         {
-            return true;
+            $key = strstr($content, ":", true);
+            if(empty($key))
+            {
+                return false;
+            }
         }
-    }
     
-    if($key == 'Set-Cookie')
-    {
-        HttpCache::$header[$key][] = $content;
-    }
-    else
-    {
-        HttpCache::$header[$key] = $content;
-    }
+        if('location' == strtolower($key) && !$http_response_code)
+        {
+            return header($content, true, 302);
+        }
     
-    return true;
-}
-
-/**
- * 删除一个header
- * @param string $name
- * @return void
- */
-function header_remove($name)
-{
-    unset( HttpCache::$header[$name]);
-}
-
-/**
- * 设置cookie
- * @param string $name
- * @param string $value
- * @param integer $maxage
- * @param string $path
- * @param string $domain
- * @param bool $secure
- * @param bool $HTTPOnly
- */
-function setcookie($name, $value = '', $maxage = 0, $path = '', $domain = '', $secure = false, $HTTPOnly = false) {
-    header(
-            'Set-Cookie: ' . $name . '=' . rawurlencode($value)
-            . (empty($domain) ? '' : '; Domain=' . $domain)
-            . (empty($maxage) ? '' : '; Max-Age=' . $maxage)
-            . (empty($path) ? '' : '; Path=' . $path)
-            . (!$secure ? '' : '; Secure')
-            . (!$HTTPOnly ? '' : '; HttpOnly'), false);
-}
-
-/**
- * session_start
- * 
- */
-function session_start()
-{
-    if(HttpCache::$instance->sessionStarted)
-    {
-        echo "already sessionStarted\nn";
+        if(isset(HttpCache::$codes[$http_response_code]))
+        {
+            HttpCache::$header['Http-Code'] = "HTTP/1.1 $http_response_code " .  HttpCache::$codes[$http_response_code];
+            if($key == 'Http-Code')
+            {
+                return true;
+            }
+        }
+    
+        if($key == 'Set-Cookie')
+        {
+            HttpCache::$header[$key][] = $content;
+        }
+        else
+        {
+            HttpCache::$header[$key] = $content;
+        }
+    
         return true;
     }
-    HttpCache::$instance->sessionStarted = true;
-    // 没有sid，则创建一个session文件，生成一个sid
-    if(!isset($_COOKIE[HttpCache::$sessionName]) || !is_file(HttpCache::$sessionPath . '/sess_' . $_COOKIE[HttpCache::$sessionName]))
+    
+    /**
+     * 删除一个header
+     * @param string $name
+     * @return void
+     */
+    function headerRemove($name)
     {
-        $file_name = tempnam(HttpCache::$sessionPath, 'sess_');
-        if(!$file_name)
+        unset( HttpCache::$header[$name]);
+    }
+    
+    /**
+     * 设置cookie
+     * @param string $name
+     * @param string $value
+     * @param integer $maxage
+     * @param string $path
+     * @param string $domain
+     * @param bool $secure
+     * @param bool $HTTPOnly
+     */
+    function setcookie($name, $value = '', $maxage = 0, $path = '', $domain = '', $secure = false, $HTTPOnly = false) {
+        header(
+                'Set-Cookie: ' . $name . '=' . rawurlencode($value)
+                . (empty($domain) ? '' : '; Domain=' . $domain)
+                . (empty($maxage) ? '' : '; Max-Age=' . $maxage)
+                . (empty($path) ? '' : '; Path=' . $path)
+                . (!$secure ? '' : '; Secure')
+                . (!$HTTPOnly ? '' : '; HttpOnly'), false);
+    }
+    
+    /**
+     * sessionStart
+     *
+     */
+    function sessionStart()
+    {
+        if(HttpCache::$instance->sessionStarted)
         {
-            return false;
+            echo "already sessionStarted\nn";
+            return true;
         }
-        HttpCache::$instance->sessionFile = $file_name;
-        $session_id = substr(basename($file_name), strlen('sess_'));
-        return setcookie(
-                HttpCache::$sessionName
-                , $session_id
-                , ini_get('session.cookie_lifetime')
-                , ini_get('session.cookie_path')
-                , ini_get('session.cookie_domain')
-                , ini_get('session.cookie_secure')
-                , ini_get('session.cookie_httponly')
-        );
-    }
-    if(!HttpCache::$instance->sessionFile)
-    {
-        HttpCache::$instance->sessionFile = HttpCache::$sessionPath . '/sess_' . $_COOKIE[HttpCache::$sessionName];
-    }
-    // 有sid则打开文件，读取session值
-    if(HttpCache::$instance->sessionFile)
-    {
-        $raw = file_get_contents(HttpCache::$instance->sessionFile);
-        if($raw)
-        { 
-            session_decode($raw);
+        HttpCache::$instance->sessionStarted = true;
+        // 没有sid，则创建一个session文件，生成一个sid
+        if(!isset($_COOKIE[HttpCache::$sessionName]) || !is_file(HttpCache::$sessionPath . '/sess_' . $_COOKIE[HttpCache::$sessionName]))
+        {
+            $file_name = tempnam(HttpCache::$sessionPath, 'sess_');
+            if(!$file_name)
+            {
+                return false;
+            }
+            HttpCache::$instance->sessionFile = $file_name;
+            $session_id = substr(basename($file_name), strlen('sess_'));
+            return setcookie(
+                    HttpCache::$sessionName
+                    , $session_id
+                    , ini_get('session.cookie_lifetime')
+                    , ini_get('session.cookie_path')
+                    , ini_get('session.cookie_domain')
+                    , ini_get('session.cookie_secure')
+                    , ini_get('session.cookie_httponly')
+            );
+        }
+        if(!HttpCache::$instance->sessionFile)
+        {
+            HttpCache::$instance->sessionFile = HttpCache::$sessionPath . '/sess_' . $_COOKIE[HttpCache::$sessionName];
+        }
+        // 有sid则打开文件，读取session值
+        if(HttpCache::$instance->sessionFile)
+        {
+            $raw = file_get_contents(HttpCache::$instance->sessionFile);
+            if($raw)
+            {
+                session_decode($raw);
+            }
         }
     }
-}
-
-/**
- * 保存session
- */
-function session_write_close()
-{
-    if(!empty(HttpCache::$instance->sessionStarted) && !empty($_SESSION))
+    
+    /**
+     * 保存session
+     */
+    public static function sessionWriteClose()
     {
-       $session_str = session_encode();
-       if($session_str && HttpCache::$instance->sessionFile)
-       {
-           return file_put_contents(HttpCache::$instance->sessionFile, $session_str);
-       }
+        if(!empty(HttpCache::$instance->sessionStarted) && !empty($_SESSION))
+        {
+            $session_str = session_encode();
+            if($session_str && HttpCache::$instance->sessionFile)
+            {
+                return file_put_contents(HttpCache::$instance->sessionFile, $session_str);
+            }
+        }
+        return empty($_SESSION);
     }
-    return empty($_SESSION);
-}
-
-/**
- * 退出
- * @param string $msg
- * @throws \Exception
- */
-function jump_exit($msg = '')
-{
-    if($msg)
+    
+    /**
+     * 退出
+     * @param string $msg
+     * @throws \Exception
+     */
+    public static function end($msg = '')
     {
-        echo $msg;
+        if($msg)
+        {
+            echo $msg;
+        }
+        throw new \Exception('jump_exit');
     }
-    throw new \Exception('jump_exit');
+    
+    /**
+     * get mime types
+     */
+    public static function getMimeTypesFile()
+    {
+        return __DIR__.'/mime.types';
+    }
 }
 
 /**
