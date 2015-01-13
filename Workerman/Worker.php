@@ -77,6 +77,12 @@ class Worker
     const DEFAUL_BACKLOG = 1024;
     
     /**
+     * max udp package size 
+     * @var int
+     */
+    const MAX_UDP_PACKEG_SIZE = 65535;
+    
+    /**
      * worker name for marking process
      * @var string
      */
