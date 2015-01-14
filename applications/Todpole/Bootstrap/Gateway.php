@@ -14,7 +14,7 @@ class Gateway extends Worker
     
     public $pingInterval = 0;
 
-    public $pingNotResposeLimit = 0;
+    public $pingNotResponseLimit = 0;
     
     public $pingData = '';
     
