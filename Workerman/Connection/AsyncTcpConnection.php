@@ -121,6 +121,10 @@ class AsyncTcpConnection extends TcpConnection
             $this->_sendBuffer .= $send_buffer;
             return null;
         }
+        elseif($this->_status == self::STATUS_CLOSED)
+        {
+            return false;
+        }
         
         if($this->_sendBuffer === '')
         {

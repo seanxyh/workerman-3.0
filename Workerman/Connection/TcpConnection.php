@@ -136,6 +136,10 @@ class TcpConnection extends ConnectionInterface
      */
     public function send($send_buffer, $raw = false)
     {
+        if($this->_status == self::STATUS_CLOSED)
+        {
+            return false;
+        }
         if(false === $raw && $this->protocol)
         {
             $parser = $this->protocol;
@@ -318,11 +322,11 @@ class TcpConnection extends ConnectionInterface
      */
     public function close($data = null)
     {
-        $this->_status = self::STATUS_CLOSING;
         if($data !== null)
         {
             $this->send($data);
         }
+        $this->_status = self::STATUS_CLOSING;
         if($this->_sendBuffer === '')
         {
            $this->destroy();
