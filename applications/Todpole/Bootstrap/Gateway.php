@@ -331,6 +331,7 @@ class Gateway extends Worker
             if($this->pingNotResponseLimit > 0 && $connection->pingNotResponseCount >= $this->pingNotResponseLimit)
             {
                 $connection->close();
+                continue;
             }
             $connection->pingNotResponseCount++;
             $connection->send($this->pingData);
