@@ -33,10 +33,6 @@ class Gateway extends Worker
         $this->onMessage = array($this, 'onClientMessage');
         $this->onClose = array($this, 'onClientClose');
         $this->onStop = array($this, 'onStop');
-        if($this->pingInterval > 0)
-        {
-            Timer::add($this->pingInterval, array($this, 'ping'));
-        }
         parent::__construct($socket_name, $context_option);
     }
     
@@ -153,6 +149,11 @@ class Gateway extends Worker
         if($this->lanPort<0 || $this->lanPort >=65535)
         {
             $this->lanPort = rand($this->startPort, 65535);
+        }
+        
+        if($this->pingInterval > 0)
+        {
+            Timer::add($this->pingInterval, array($this, 'ping'));
         }
     
         $this->_innerTcpWorker = new Worker("GatewayProtocol://{$this->lanIp}:{$this->lanPort}");
