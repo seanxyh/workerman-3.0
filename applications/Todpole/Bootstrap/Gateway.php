@@ -1,5 +1,6 @@
 <?php 
 use Workerman\Worker;
+use Workerman\Timer;
 use Workerman\Lock;
 use \Lib\Store;
 use \Protocols\GatewayProtocol;
@@ -10,6 +11,12 @@ class Gateway extends Worker
     public $lanIp = '127.0.0.1';
     
     public $startPort = 4000;
+    
+    public $pingInterval = 0;
+
+    public $pingNotResposeLimit = 0;
+    
+    public $pingData = '';
     
     protected $_clientConnections = array();
     
@@ -26,11 +33,16 @@ class Gateway extends Worker
         $this->onMessage = array($this, 'onClientMessage');
         $this->onClose = array($this, 'onClientClose');
         $this->onStop = array($this, 'onStop');
+        if($this->pingInterval > 0)
+        {
+            Timer::add($this->pingInterval, array($this, 'ping'));
+        }
         parent::__construct($socket_name, $context_option);
     }
     
     public function onClientMessage($connection, $data)
     {
+        $connection->pingNotResponseCount = 0;
         $this->sendToWorker(GatewayProtocol::CMD_ON_MESSAGE, $connection, $data);
     }
     
@@ -45,6 +57,7 @@ class Gateway extends Worker
             'client_id'=>$connection->globalClientId,
         );
         $connection->session = '';
+        $connection->pingNotResponseCount = 0;
         $this->_clientConnections[$connection->globalClientId] = $connection;
         $address = $this->lanIp.':'.$this->lanPort;
         $this->storeClientAddress($connection->globalClientId, $address);
@@ -308,6 +321,20 @@ class Gateway extends Worker
         return true;
     }
     
+    public function ping()
+    {
+        // 关闭未回复心跳的连接
+        foreach($this->_clientConnections as $connection)
+        {
+            // 上次发送的心跳还没有回复次数大于限定值就断开
+            if($this->pingNotResponseLimit > 0 && $connection->pingNotResponseCount >= $this->pingNotResponseLimit)
+            {
+                $connection->close();
+            }
+            $connection->pingNotResponseCount++;
+            $connection->send($this->pingData);
+        }
+    }
     
     public function onStop()
     {

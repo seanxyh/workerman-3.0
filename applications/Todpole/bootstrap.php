@@ -14,6 +14,10 @@ $gateway->lanIp = '127.0.0.1';
 
 $gateway->startPort = 4000;
 
+$gateway->pingInterval = 10;
+
+$gateway->pingData = '{"type":"ping"}';
+
 
 // bussinessWorker
 $worker = new BusinessWorker("tcp://0.0.0.0:7273");
