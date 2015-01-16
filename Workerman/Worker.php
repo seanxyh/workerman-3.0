@@ -192,7 +192,7 @@ class Worker
     protected $_mainSocket = null;
     
     /**
-     * socket name example tcp://0.0.0.0:80
+     * socket name example http://0.0.0.0:80
      * @var string
      */
     protected $_socketName = '';
@@ -312,7 +312,7 @@ class Worker
      */
     protected static function initWorkers()
     {
-        foreach(self::$_workers as $socket_name=>$worker)
+        foreach(self::$_workers as $worker)
         {
             // if worker->name not set then use worker->_socketName as worker->name
             if(empty($worker->name))
@@ -605,7 +605,7 @@ class Worker
     protected static function getAllWorkerPids()
     {
         $pid_array = array(); 
-        foreach(self::$_pidMap as $socket_name => $worker_pid_array)
+        foreach(self::$_pidMap as $worker_pid_array)
         {
             foreach($worker_pid_array as $worker_pid)
             {
@@ -621,7 +621,7 @@ class Worker
      */
     protected static function forkWorkers()
     {
-        foreach(self::$_workers as $socket_name=>$worker)
+        foreach(self::$_workers as $worker)
         {
             // check worker->name etc
             if(self::$_status === self::STATUS_STARTING)
@@ -640,7 +640,7 @@ class Worker
             }
             
             // create processes
-            while(count(self::$_pidMap[$socket_name]) < $worker->count)
+            while(count(self::$_pidMap[$worker->workerId]) < $worker->count)
             {
                 self::forkOneWorker($worker);
             }
@@ -657,12 +657,12 @@ class Worker
         $pid = pcntl_fork();
         if($pid > 0)
         {
-            self::$_pidMap[$worker->getSocketName()][$pid] = $pid;
+            self::$_pidMap[$worker->workerId][$pid] = $pid;
         }
         elseif(0 === $pid)
         {
             self::$_pidMap = array();
-            self::$_workers = array($worker->getSocketName() => $worker);
+            self::$_workers = array($worker->workerId => $worker);
             Timer::delAll();
             $worker->run();
             exit(250);
@@ -688,11 +688,11 @@ class Worker
             $pid = pcntl_wait($status, WUNTRACED);
             if($pid > 0)
             {
-                foreach(self::$_pidMap as $socket_name => $worker_pid_array)
+                foreach(self::$_pidMap as $worker_id => $worker_pid_array)
                 {
                     if(isset($worker_pid_array[$pid]))
                     {
-                        $worker = self::$_workers[$socket_name];
+                        $worker = self::$_workers[$worker_id];
                         // check status
                         if($status !== 0)
                         {
@@ -700,11 +700,11 @@ class Worker
                         }
                        
                         // statistics
-                        if(!isset(self::$_globalStatistics['worker_exit_info'][$worker->getSocketName()][$status]))
+                        if(!isset(self::$_globalStatistics['worker_exit_info'][$worker_id][$status]))
                         {
-                            self::$_globalStatistics['worker_exit_info'][$worker->getSocketName()][$status] = 0;
+                            self::$_globalStatistics['worker_exit_info'][$worker_id][$status] = 0;
                         }
-                        self::$_globalStatistics['worker_exit_info'][$worker->getSocketName()][$status]++;
+                        self::$_globalStatistics['worker_exit_info'][$worker_id][$status]++;
                         
                         // if realoding, continue
                         if(isset(self::$_pidsToRestart[$pid]))
@@ -714,7 +714,7 @@ class Worker
                         }
                         
                         // clear pid info
-                        unset(self::$_pidMap[$socket_name][$pid]);
+                        unset(self::$_pidMap[$worker_id][$pid]);
                         break;
                     }
                 }
@@ -833,12 +833,12 @@ class Worker
             file_put_contents(self::$_statisticsFile, 'load average: ' . implode(", ", $loadavg) . "\n", FILE_APPEND);
             file_put_contents(self::$_statisticsFile,  count(self::$_pidMap) . ' workers       ' . count(self::getAllWorkerPids())." processes\n", FILE_APPEND);
             file_put_contents(self::$_statisticsFile, str_pad('worker_name', self::$_maxWorkerNameLength) . " exit_status     exit_count\n", FILE_APPEND);
-            foreach(self::$_pidMap as $socket_name =>$worker_pid_array)
+            foreach(self::$_pidMap as $worker_id =>$worker_pid_array)
             {
-                $worker = self::$_workers[$socket_name];
-                if(isset(self::$_globalStatistics['worker_exit_info'][$socket_name]))
+                $worker = self::$_workers[$worker_id];
+                if(isset(self::$_globalStatistics['worker_exit_info'][$worker_id]))
                 {
-                    foreach(self::$_globalStatistics['worker_exit_info'][$socket_name] as $worker_exit_status=>$worker_exit_count)
+                    foreach(self::$_globalStatistics['worker_exit_info'][$worker_id] as $worker_exit_status=>$worker_exit_count)
                     {
                         file_put_contents(self::$_statisticsFile, str_pad($worker->name, self::$_maxWorkerNameLength) . " " . str_pad($worker_exit_status, 16). " $worker_exit_count\n", FILE_APPEND);
                     }
@@ -887,14 +887,19 @@ class Worker
      */
     public function __construct($socket_name, $context_option = array())
     {
-        $this->_socketName = $socket_name;
-        self::$_workers[$this->_socketName] = $this;
-        self::$_pidMap[$this->_socketName] = array();
-        if(!isset($context_option['socket']['backlog']))
+        $this->workerId = spl_object_hash($this);
+        self::$_workers[$this->workerId] = $this;
+        self::$_pidMap[$this->workerId] = array();
+        
+        if($socket_name)
         {
-            $context_option['socket']['backlog'] = self::DEFAUL_BACKLOG;
+            $this->_socketName = $socket_name;
+            if(!isset($context_option['socket']['backlog']))
+            {
+                $context_option['socket']['backlog'] = self::DEFAUL_BACKLOG;
+            }
+            $this->_context = stream_context_create($context_option);
         }
-        $this->_context = stream_context_create($context_option);
     }
     
     /**
@@ -968,13 +973,16 @@ class Worker
             {
                 self::$_globalEvent = new Select();
             }
-            if($this->transport !== 'udp')
+            if($this->_socketName)
             {
-                self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'acceptConnection'));
-            }
-            else
-            {
-                self::$_globalEvent->add($this->_mainSocket,  EventInterface::EV_READ, array($this, 'acceptUdpConnection'));
+                if($this->transport !== 'udp')
+                {
+                    self::$_globalEvent->add($this->_mainSocket, EventInterface::EV_READ, array($this, 'acceptConnection'));
+                }
+                else
+                {
+                    self::$_globalEvent->add($this->_mainSocket,  EventInterface::EV_READ, array($this, 'acceptUdpConnection'));
+                }
             }
         }
         self::reinstallSignal();

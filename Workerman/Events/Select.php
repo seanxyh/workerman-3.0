@@ -108,7 +108,7 @@ class Select implements EventInterface
             $read = $this->_readFds;
             $write = $this->_writeFds;
             // waits for $read and $write to change status
-            if(!($ret = @stream_select($read, $write, $e, PHP_INT_MAX)))
+            if(!@stream_select($read, $write, $e, PHP_INT_MAX))
             {
                 // maybe interrupt by sianals, so calls signal handlers for pending signals
                 function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
