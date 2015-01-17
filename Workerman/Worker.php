@@ -885,7 +885,7 @@ class Worker
      * @param string $socket_name
      * @return void
      */
-    public function __construct($socket_name, $context_option = array())
+    public function __construct($socket_name = '', $context_option = array())
     {
         $this->workerId = spl_object_hash($this);
         self::$_workers[$this->workerId] = $this;
