@@ -905,7 +905,7 @@ class Worker
             file_put_contents(self::$_statisticsFile,  "---------------------------------------PROCESS STATUS-------------------------------------------\n", FILE_APPEND);
             file_put_contents(self::$_statisticsFile, "pid\tmemory  ".str_pad('listening', self::$_maxSocketNameLength)." ".str_pad('worker_name', self::$_maxWorkerNameLength)." ".str_pad('total_request', 13)." ".str_pad('send_fail', 9)." ".str_pad('throw_exception', 15)."\n", FILE_APPEND);
             
-            chmod(self::$_statisticsFile, '722');
+            chmod(self::$_statisticsFile, 0722);
             
             foreach(self::getAllWorkerPids() as $worker_pid)
             {
