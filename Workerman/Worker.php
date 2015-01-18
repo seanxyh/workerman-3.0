@@ -629,7 +629,7 @@ class Worker
                 // if worker->name not set then use worker->_socketName as worker->name
                 if(empty($worker->name))
                 {
-                    $worker->name = $worker->getSocketName();;
+                    $worker->name = $worker->getSocketName();
                 }
                 // get the max length of worker->name for formating status info
                 $worker_name_length = strlen($worker->name);
@@ -908,6 +908,10 @@ class Worker
      */
     public function listen()
     {
+        if(!$this->_socketName)
+        {
+            return;
+        }
         list($scheme, $address) = explode(':', $this->_socketName, 2);
         if($scheme != 'tcp' && $scheme != 'udp')
         {
@@ -955,7 +959,7 @@ class Worker
      */
     public function getSocketName()
     {
-        return $this->_socketName;
+        return $this->_socketName ? $this->_socketName : 'none';
     }
     
     /**
