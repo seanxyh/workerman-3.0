@@ -310,7 +310,7 @@ class Worker
         self::$_status = self::STATUS_STARTING;
         self::$_globalStatistics['start_timestamp'] = time();
         self::$_statisticsFile = sys_get_temp_dir().'/workerman.status';
-        self::setProcessTitle('WorkerMan: master start_file=' . self::$_startFile);
+        self::setProcessTitle('WorkerMan: master process  start_file=' . self::$_startFile);
         Timer::init();
     }
     
@@ -672,7 +672,7 @@ class Worker
             self::$_pidMap = array();
             self::$_workers = array($worker->workerId => $worker);
             Timer::delAll();
-            self::setProcessTitle('WorkerMan: worker ' . $worker->name . ' ' . $worker->getSocketName());
+            self::setProcessTitle('WorkerMan: worker process  ' . $worker->name . ' ' . $worker->getSocketName());
             self::setProcessUser($worker->user);
             $worker->run();
             exit(250);
