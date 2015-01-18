@@ -145,12 +145,6 @@ class Worker
     public $onStop = null;
     
     /**
-     * set the real user of the worker process, needs appropriate privileges (usually root) 
-     * @var string
-     */
-    public $user = '';
-    
-    /**
      * tcp/udp
      * @var string
      */
