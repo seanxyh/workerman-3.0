@@ -673,7 +673,7 @@ class Worker
             self::$_workers = array($worker->workerId => $worker);
             Timer::delAll();
             self::setProcessTitle('WorkerMan:worker ' . $worker->name . $worker->getSocketName());
-            self::setProcessUser($this->user);
+            self::setProcessUser($worker->user);
             $worker->run();
             exit(250);
         }
@@ -687,11 +687,10 @@ class Worker
      * set current process user
      * @return void
      */
-    protected static function setProcessUser()
+    protected static function setProcessUser($user_name)
     {
-        if(empty($this->user) || posix_getuid() !== 0)
+        if(empty($user_name) || posix_getuid() !== 0)
         {
-            $this->user = self::getCurrentUser();
             return;
         }
         $user_info = posix_getpwnam($this->user);
