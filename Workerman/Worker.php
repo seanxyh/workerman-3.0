@@ -90,6 +90,12 @@ class Worker
     public $name = 'none';
     
     /**
+     * Set the real user of the current process . Needs appropriate privileges (usually root) 
+     * @var string
+     */
+    public $user = '';
+    
+    /**
      * when worker start, then run onStart
      * @var callback
      */
@@ -332,7 +338,7 @@ class Worker
                 self::$_maxSocketNameLength = $socket_name_length;
             }
             // get the max length user name
-            if(empty($worker->user))
+            if(empty($worker->user) || posix_getuid() !== 0)
             {
                 $worker->user = self::getCurrentUser();
             }
@@ -664,12 +670,34 @@ class Worker
             self::$_pidMap = array();
             self::$_workers = array($worker->workerId => $worker);
             Timer::delAll();
+            self::setProcessUser($this->user);
             $worker->run();
             exit(250);
         }
         else
         {
             throw new Exception("forkOneWorker fail");
+        }
+    }
+    
+    /**
+     * 
+     * @param unknown_type $user_name
+     */
+    protected static function setProcessUser()
+    {
+        if(empty($this->user) || posix_getuid() !== 0)
+        {
+            $this->user = self::getCurrentUser();
+            return;
+        }
+        $user_info = posix_getpwnam($this->user);
+        if($user_info['uid'] != posix_getuid() || $user_info['gid'] != posix_getgid())
+        {
+            if(!posix_setgid($user_info['gid']) || !posix_setuid($user_info['uid']))
+            {
+                self::log( 'Notice : Can not run woker as '.$user_name." , You shuld be root\n", true);
+            }
         }
     }
 

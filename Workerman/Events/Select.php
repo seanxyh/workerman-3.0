@@ -47,7 +47,7 @@ class Select implements EventInterface
                 break;
             case self::EV_SIGNAL:
                 $this->_signalEvents[$fd_key][$flag] = array($func, $fd);
-                function_exists('pcntl_signal') && pcntl_signal($fd, array($this, 'signalHandler'));
+                pcntl_signal($fd, array($this, 'signalHandler'));
                 break;
         }
         
@@ -88,7 +88,7 @@ class Select implements EventInterface
                 break;
             case self::EV_SIGNAL:
                 unset($this->_signalEvents[$fd_key]);
-                function_exists('pcntl_signal') && pcntl_signal($fd, SIG_IGN);
+                pcntl_signal($fd, SIG_IGN);
                 break;
         }
         return true;
@@ -103,7 +103,7 @@ class Select implements EventInterface
         while (1)
         {
             // calls signal handlers for pending signals
-            function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
+            pcntl_signal_dispatch();
             // 
             $read = $this->_readFds;
             $write = $this->_writeFds;
@@ -111,7 +111,7 @@ class Select implements EventInterface
             if(!@stream_select($read, $write, $e, PHP_INT_MAX))
             {
                 // maybe interrupt by sianals, so calls signal handlers for pending signals
-                function_exists('pcntl_signal_dispatch') && pcntl_signal_dispatch();
+                pcntl_signal_dispatch();
                 continue;
             }
             
