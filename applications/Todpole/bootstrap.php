@@ -20,7 +20,7 @@ $gateway->pingData = '{"type":"ping"}';
 
 
 // bussinessWorker
-$worker = new BusinessWorker("tcp://0.0.0.0:7273");
+$worker = new BusinessWorker();
 
 $worker->name = 'TodpoleBusinessWorker';
 
