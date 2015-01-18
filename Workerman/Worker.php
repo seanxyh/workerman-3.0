@@ -693,7 +693,7 @@ class Worker
         {
             return;
         }
-        $user_info = posix_getpwnam($this->user);
+        $user_info = posix_getpwnam($user_name);
         if($user_info['uid'] != posix_getuid() || $user_info['gid'] != posix_getgid())
         {
             if(!posix_setgid($user_info['gid']) || !posix_setuid($user_info['uid']))
