@@ -18,7 +18,7 @@ class BusinessWorker extends Worker
     
     public $badGatewayAddress = array();
     
-    public function __construct($socket_name, $context_option = array())
+    public function __construct($socket_name = '', $context_option = array())
     {
         $this->onStart = array($this, 'onStart');
         parent::__construct($socket_name, $context_option);
