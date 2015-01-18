@@ -672,7 +672,7 @@ class Worker
             self::$_pidMap = array();
             self::$_workers = array($worker->workerId => $worker);
             Timer::delAll();
-            self::setProcessTitle('WorkerMan:worker ' . $worker->name . $worker->getSocketName());
+            self::setProcessTitle('WorkerMan: worker ' . $worker->name . ' ' . $worker->getSocketName());
             self::setProcessUser($worker->user);
             $worker->run();
             exit(250);
