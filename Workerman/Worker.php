@@ -90,10 +90,23 @@ class Worker
     public $name = 'none';
     
     /**
+     * how many processes will be created for the current worker
+     * @var unknown_type
+     */
+    public $count = 1;
+    
+    /**
      * Set the real user of the current process . Needs appropriate privileges (usually root) 
      * @var string
      */
     public $user = '';
+    
+    /**
+     * If you do not want restart current worker processes, when received reload signal
+     * just set noReload = true 
+     * @var bool
+     */
+    public $noReload = false;
     
     /**
      * when worker start, then run onStart
@@ -130,12 +143,6 @@ class Worker
      * @var callback
      */
     public $onStop = null;
-    
-    /**
-     * how many processes will be created for the current worker
-     * @var unknown_type
-     */
-    public $count = 1;
     
     /**
      * set the real user of the worker process, needs appropriate privileges (usually root) 
@@ -309,6 +316,7 @@ class Worker
         self::$_status = self::STATUS_STARTING;
         self::$_globalStatistics['start_timestamp'] = time();
         self::$_statisticsFile = sys_get_temp_dir().'/workerman.status';
+        self::setProcessTitle('WorkerMan:master start_file=' . self::$_startFile);
         Timer::init();
     }
     
@@ -670,6 +678,7 @@ class Worker
             self::$_pidMap = array();
             self::$_workers = array($worker->workerId => $worker);
             Timer::delAll();
+            self::setProcessTitle("WorkerMan:worker " . ($worker->name ? $worker->name : '') . ' ' . $worker->getSocketName());
             self::setProcessUser($this->user);
             $worker->run();
             exit(250);
@@ -681,8 +690,8 @@ class Worker
     }
     
     /**
-     * 
-     * @param unknown_type $user_name
+     * set current process user
+     * @return void
      */
     protected static function setProcessUser()
     {
@@ -701,6 +710,26 @@ class Worker
         }
     }
 
+    
+    /**
+     * set current process title
+     * @param string $title
+     * @return void
+     */
+    protected static function setProcessTitle($title)
+    {
+        // >=php 5.5
+        if (function_exists('cli_set_process_title'))
+        {
+            @cli_set_process_title($title);
+        }
+        // 需要扩展
+        elseif(extension_loaded('proctitle') && function_exists('setproctitle'))
+        {
+            @setproctitle($title);
+        }
+    }
+    
     /**
      * wait for the child process exit
      * @return void
@@ -807,11 +836,15 @@ class Worker
             // continue reload
             $one_worker_pid = current(self::$_pidsToRestart );
             posix_kill($one_worker_pid, SIGUSR1);
-            Timer::add(self::KILL_WORKER_TIMER_TIME, 'posix_kill', array($one_worker_pid, SIGKILL), false);
         }
         // for children process
         else
         {
+            $worker = current(self::$_workers);
+            if($worker->noReload)
+            {
+                return;
+            }
             self::stopAll();
         }
     } 
