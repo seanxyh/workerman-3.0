@@ -20,7 +20,7 @@ class Websocket
         // 长度不够
         if($recv_len < 6)
         {
-            return PHP_INT_MAX;
+            return 0;
         }
         
         // 还没有握手
@@ -33,7 +33,7 @@ class Websocket
                 $heder_end_pos = strpos($buffer, "\r\n\r\n");
                 if(!$heder_end_pos)
                 {
-                    return PHP_INT_MAX;
+                    return 0;
                 }
                 // 解析Sec-WebSocket-Key
                 $Sec_WebSocket_Key = '';
@@ -51,30 +51,30 @@ class Websocket
                 $connection->handshake = true;
                 $connection->consumeRecvBuffer(strlen($buffer));
                 $connection->send($new_message, true);
-                return PHP_INT_MAX;
+                return 0;
             }
             // 如果是flash的policy-file-request
             elseif(0 === strpos($buffer,'<polic'))
             {
                 if('>' != $buffer[strlen($buffer) - 1])
                 {
-                    return PHP_INT_MAX;
+                    return 0;
                 }
                 $policy_xml = '<?xml version="1.0"?><cross-domain-policy><site-control permitted-cross-domain-policies="all"/><allow-access-from domain="*" to-ports="*"/></cross-domain-policy>'."\0";
                 $connection->send($policy_xml, true);
                 $connection->consumeRecvBuffer(strlen($buffer));
-                return PHP_INT_MAX;
+                return 0;
             }
             // error
             $connection->close();
-            return PHP_INT_MAX;
+            return 0;
         }
         
         // close package
         if(ord($buffer[0]) & 0xf == 8)
         {
             $connection->close();
-            return PHP_INT_MAX;
+            return 0;
         }
         
         // websocket二进制数据

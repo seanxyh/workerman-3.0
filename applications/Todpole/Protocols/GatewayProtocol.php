@@ -76,7 +76,7 @@ class GatewayProtocol
     {
         if(strlen($buffer) < self::HEAD_LEN)
         {
-            return self::HEAD_LEN;
+            return 0;
         }
         
         $data = unpack("Npack_len", $buffer);

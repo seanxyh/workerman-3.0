@@ -90,6 +90,12 @@ class TcpConnection extends ConnectionInterface
      * @var string
      */
     protected $_recvBuffer = '';
+    
+    /**
+     * current package length
+     * @var int
+     */
+    protected $_currentPackageLength = 0;
 
     /**
      * connection status
@@ -231,18 +237,33 @@ class TcpConnection extends ConnectionInterface
            if($this->protocol)
            {
                $parser = $this->protocol;
-               while(1)
+               while($this->_recvBuffer)
                {
-                   $package_len = $parser::input($this->_recvBuffer, $this);
-                   $recv_len = strlen($this->_recvBuffer);
-                   // we need more buffer
-                   if($package_len>$recv_len)
+                   // already know current package length 
+                   if($this->_currentPackageLength)
                    {
-                       break;
+                       // we need more buffer
+                       if($this->_currentPackageLength > strlen($this->_recvBuffer))
+                       {
+                           break;
+                       }
                    }
+                   else
+                   {
+                       // try to get the current package length
+                       $this->_currentPackageLength = $parser::input($this->_recvBuffer, $this);
+                       // we need more buffer
+                       if($this->_currentPackageLength === 0 || $this->_currentPackageLength > strlen($this->_recvBuffer))
+                       {
+                           break;
+                       }
+                   }
+                   
+                   // recvived the  whole data 
                    self::$statistics['total_request']++;
-                   $one_request_buffer = substr($this->_recvBuffer, 0, $package_len);
-                   $this->_recvBuffer = substr($this->_recvBuffer, $package_len);
+                   $one_request_buffer = substr($this->_recvBuffer, 0, $this->_currentPackageLength);
+                   $this->_recvBuffer = substr($this->_recvBuffer, $this->_currentPackageLength);
+                   $this->_currentPackageLength = 0;
                    try
                    {
                        call_user_func($this->onMessage, $this, $parser::decode($one_request_buffer, $this));
