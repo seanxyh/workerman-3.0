@@ -24,7 +24,6 @@ class BusinessWorker extends Worker
         parent::__construct($socket_name, $context_option);
     }
     
-    
     protected function onStart()
     {
         Timer::add(1, array($this, 'checkGatewayConnections'));

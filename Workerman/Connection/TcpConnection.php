@@ -231,8 +231,13 @@ class TcpConnection extends ConnectionInterface
           $this->_recvBuffer .= $buffer; 
        }
        
-       if($this->_recvBuffer && $this->onMessage)
+       if($this->_recvBuffer)
        {
+           if(!$this->onMessage)
+           {
+               return ;
+           }
+           
            // protocol has been set
            if($this->protocol)
            {
@@ -256,6 +261,11 @@ class TcpConnection extends ConnectionInterface
                        if($this->_currentPackageLength === 0 || $this->_currentPackageLength > strlen($this->_recvBuffer))
                        {
                            break;
+                       }
+                       // bad package
+                       elseif($this->_currentPackageLength < 0 || $this->_currentPackageLength === false)
+                       {
+                           $this->close('error package');
                        }
                    }
                    
