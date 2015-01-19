@@ -74,6 +74,18 @@ class TcpConnection extends ConnectionInterface
     protected $_event = null;
     
     /**
+     * max send buffer size (Bytes)
+     * @var int
+     */
+    public static $maxSendBufferSize = 1048576;
+    
+    /**
+     * max package size (Bytes)
+     * @var int
+     */
+    public static $maxPackageSize = 10485760;
+    
+    /**
      * the socket
      * @var resource
      */
@@ -186,6 +198,17 @@ class TcpConnection extends ConnectionInterface
         {
             $this->_sendBuffer .= $send_buffer;
         }
+        // check send buffer size
+        if(self::$maxSendBufferSize <= strlen($this->_sendBuffer))
+        {
+            self::$statistics['send_fail']++;
+            if($this->onError)
+            {
+                call_user_func($this->onError, $this, WORKERMAN_SEND_FAIL, 'package size too big');
+            }
+            $this->destroy();
+            return false;
+        }
     }
     
     /**
@@ -257,15 +280,18 @@ class TcpConnection extends ConnectionInterface
                    {
                        // try to get the current package length
                        $this->_currentPackageLength = $parser::input($this->_recvBuffer, $this);
-                       // we need more buffer
-                       if($this->_currentPackageLength === 0 || $this->_currentPackageLength > strlen($this->_recvBuffer))
+                       if($this->_currentPackageLength > strlen($this->_recvBuffer))
                        {
-                           break;
-                       }
-                       // bad package
-                       elseif($this->_currentPackageLength < 0 || $this->_currentPackageLength === false)
-                       {
-                           $this->close('error package');
+                           // we need more buffer
+                           if($this->_currentPackageLength === 0 || $this->_currentPackageLength <= self::$maxPackageSize)
+                           {
+                               break;
+                           }
+                           // bad package
+                           else
+                           {
+                               $this->close('error package. package_length=' . var_export($this->_currentPackageLength, true));
+                           }
                        }
                    }
                    
