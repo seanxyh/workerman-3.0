@@ -1,8 +1,10 @@
 <?php 
 use \Workerman\WebServer;
+use \Bootstrap\Gateway;
+use \Bootstrap\BusinessWorker;
 
-require_once __DIR__ . '/Bootstrap/Gateway.php';
-require_once __DIR__ . '/Bootstrap/BusinessWorker.php';
+require_once __DIR__ . '/../../Workerman/Autoloader.php';
+require_once __DIR__ . '/Lib/Autoloader.php';
 
 // gateway
 $gateway = new Gateway("Websocket://0.0.0.0:8585");
