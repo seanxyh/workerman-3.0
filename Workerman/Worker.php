@@ -985,7 +985,7 @@ class Worker
                     }
                     elseif(is_file(__DIR__."/Protocols/$scheme/$scheme.php"))
                     {
-                        require_once __DIR__."/Protocols/$scheme.php";
+                        require_once __DIR__."/Protocols/$scheme/$scheme.php";
                         $this->_protocol = "\\Workerman\\Protocols\\$scheme\\$scheme";
                     }
                     else 
