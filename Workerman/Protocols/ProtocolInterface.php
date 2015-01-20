@@ -1,5 +1,5 @@
 <?php
-namespace Workerman;
+namespace Workerman\Protocols;
 
 /**
  * Protocol interface

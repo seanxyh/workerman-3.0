@@ -17,7 +17,7 @@ require_once __DIR__ . '/Lock.php';
 require_once __DIR__ . '/Events/EventInterface.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
-require_once __DIR__ . '/ProtocolInterface.php';
+require_once __DIR__ . '/Protocols/ProtocolInterface.php';
 
 
 use Workerman\Events\Libevent;
@@ -978,7 +978,20 @@ class Worker
                 $this->_protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
                 if(!class_exists($this->_protocol))
                 {
-                    throw new Exception('class ' .$this->_protocol . ' not exist');
+                    if(is_file(__DIR__."/Protocols/$scheme.php"))
+                    {
+                        require_once __DIR__."/Protocols/$scheme.php";
+                        $this->_protocol = "\\Workerman\\Protocols\\$scheme";
+                    }
+                    elseif(is_file(__DIR__."/Protocols/$scheme/$scheme.php"))
+                    {
+                        require_once __DIR__."/Protocols/$scheme.php";
+                        $this->_protocol = "\\Workerman\\Protocols\\$scheme\\$scheme";
+                    }
+                    else 
+                    {
+                        throw new Exception('class ' .$this->_protocol . ' not exist');
+                    }
                 }
             }
         }

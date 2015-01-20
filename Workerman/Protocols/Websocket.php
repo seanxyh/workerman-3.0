@@ -1,13 +1,13 @@
 <?php 
-namespace Protocols;
+namespace Workerman\Protocols;
 /**
- * WebSocket 协议解包和打包
+ * WebSocket 协议服务端解包和打包
  * @author walkor <walkor@workerman.net>
  */
 
 use Workerman\Connection\ConnectionInterface;
 
-class Websocket
+class Websocket implements \Workerman\Protocols\ProtocolInterface
 {
     /**
      * 检查包的完整性

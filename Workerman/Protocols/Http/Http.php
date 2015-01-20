@@ -1,7 +1,7 @@
 <?php 
-namespace  Protocols\Http;
+namespace  Workerman\Protocols\Http;
 
-class Http implements \Workerman\ProtocolInterface
+class Http implements \Workerman\Protocols\ProtocolInterface
 {
     public static function input($recv_buffer)
     {
