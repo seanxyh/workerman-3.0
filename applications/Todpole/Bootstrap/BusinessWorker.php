@@ -8,7 +8,7 @@ use \Lib\Lock;
 use \Lib\Store;
 use \Protocols\GatewayProtocol;
 use \Lib\Context;
-use \Lib\Gateway;
+use \Event;
 
 class BusinessWorker extends Worker
 {
@@ -28,7 +28,7 @@ class BusinessWorker extends Worker
     {
         Timer::add(1, array($this, 'checkGatewayConnections'));
         $this->checkGatewayConnections();
-        Gateway::setBusinessWorker($this);
+        \Lib\Gateway::setBusinessWorker($this);
     }
     
     public function onGatewayMessage($connection, $data)
@@ -80,7 +80,7 @@ class BusinessWorker extends Worker
         $session_str_now = $_SESSION !== null ? Context::sessionEncode($_SESSION) : '';
         if($session_str_copy != $session_str_now)
         {
-            Gateway::updateSocketSession(Context::$client_id, $session_str_now);
+            \Lib\Gateway::updateSocketSession(Context::$client_id, $session_str_now);
         }
     
         Context::clear();
