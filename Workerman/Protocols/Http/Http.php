@@ -1,9 +1,15 @@
 <?php 
 namespace  Workerman\Protocols\Http;
 
+use Workerman\Connection\ConnectionInterface;
+
+/**
+ * http protocol
+ * @author walkor<walkor@workerman.net>
+ */
 class Http implements \Workerman\Protocols\ProtocolInterface
 {
-    public static function input($recv_buffer)
+    public static function input($recv_buffer, ConnectionInterface $connection)
     {
         if(!strpos($recv_buffer, "\r\n\r\n"))
         {
@@ -36,7 +42,7 @@ class Http implements \Workerman\Protocols\ProtocolInterface
         return;
     }
     
-    public static function decode($recv_buffer)
+    public static function decode($recv_buffer, ConnectionInterface $connection)
     {
         // 初始化
         $_POST = $_GET = $_COOKIE = $_REQUEST = $_SESSION =  array();
@@ -155,7 +161,7 @@ class Http implements \Workerman\Protocols\ProtocolInterface
         $_REQUEST = array_merge($_GET, $_POST);
     }
     
-    public static function encode($content)
+    public static function encode($content, ConnectionInterface $connection)
     {
         // 没有http-code默认给个
         if(!isset(HttpCache::$header['Http-Code']))
