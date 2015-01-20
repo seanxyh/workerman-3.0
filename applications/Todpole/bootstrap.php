@@ -1,5 +1,5 @@
 <?php 
-use Workerman;
+use \Workerman\WebServer;
 
 require_once __DIR__ . '/Bootstrap/Gateway.php';
 require_once __DIR__ . '/Bootstrap/BusinessWorker.php';
