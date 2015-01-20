@@ -1,7 +1,7 @@
 <?php
 use Workerman\Worker;
-use \Protocols\Http\Http;
-use \Protocols\Http\HttpCache;
+use \Workerman\Protocols\Http\Http;
+use \Workerman\Protocols\Http\HttpCache;
 
 /**
  * 
