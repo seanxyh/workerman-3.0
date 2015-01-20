@@ -1,7 +1,7 @@
 <?php
 if(!defined('WORKERMAN_ROOT_DIR'))
 {
-    define('WORKERMAN_ROOT_DIR', realpath(__DIR__ . '/../') . '/');
+    define('WORKERMAN_ROOT_DIR', __DIR__  . '/');
 }
 
 require_once WORKERMAN_ROOT_DIR.'/Lib/Constants.php';
