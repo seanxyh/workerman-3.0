@@ -3,7 +3,6 @@ use \Workerman\WebServer;
 
 require_once __DIR__ . '/Bootstrap/Gateway.php';
 require_once __DIR__ . '/Bootstrap/BusinessWorker.php';
-require_once __DIR__ . '/Bootstrap/WebServer.php';
 
 // gateway
 $gateway = new Gateway("Websocket://0.0.0.0:8585");
