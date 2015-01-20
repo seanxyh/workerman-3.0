@@ -1,10 +1,11 @@
 <?php 
-use Workerman\Worker;
-use Workerman\Timer;
-use Workerman\Lock;
+namespace Bootstrap;
+
+use \Workerman\Worker;
+use \Workerman\Lib\Timer;
+use \Lib\Lock;
 use \Lib\Store;
 use \Protocols\GatewayProtocol;
-require_once __DIR__ . '/../Lib/Autoloader.php';
 
 class Gateway extends Worker
 {

@@ -7,26 +7,13 @@ if(!ini_get('date.timezone') )
 }
 ini_set('display_errors', 'on');
 
-require_once __DIR__ . '/constants.php';
-require_once __DIR__ . '/Connection/ConnectionInterface.php';
-require_once __DIR__ . '/Connection/TcpConnection.php';
-require_once __DIR__ . '/Connection/UdpConnection.php';
-require_once __DIR__ . '/Connection/AsyncTcpConnection.php';
-require_once __DIR__ . '/Timer.php';
-require_once __DIR__ . '/Lock.php';
-require_once __DIR__ . '/Events/EventInterface.php';
-require_once __DIR__ . '/Events/Select.php';
-require_once __DIR__ . '/Events/Libevent.php';
-require_once __DIR__ . '/Protocols/ProtocolInterface.php';
-require_once __DIR__ . '/WebServer.php';
-
-
-use Workerman\Events\Libevent;
-use Workerman\Events\Select;
-use Workerman\Events\EventInterface;
-use Workerman\Connection\ConnectionInterface;
-use Workerman\Connection\TcpConnection;
-use Workerman\Connection\UdpConnection;
+use \Workerman\Events\Libevent;
+use \Workerman\Events\Select;
+use \Workerman\Events\EventInterface;
+use \Workerman\Connection\ConnectionInterface;
+use \Workerman\Connection\TcpConnection;
+use \Workerman\Connection\UdpConnection;
+use \Workerman\Lib\Timer;
 use \Exception;
 
 /**

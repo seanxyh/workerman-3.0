@@ -1,9 +1,9 @@
 <?php
-if(!defined('ROOT_DIR'))
+if(!defined('WORKERMAN_APP_ROOT_DIR'))
 {
-    define('ROOT_DIR', realpath(__DIR__ . '/../') . '/');
+    define('WORKERMAN_APP_ROOT_DIR', realpath(__DIR__ . '/../') . '/');
 }
-function loadByNamespace($name)
+function load_by_namespace($name)
 {
     $class_path = str_replace('\\', DIRECTORY_SEPARATOR ,$name);
     $class_file = ROOT_DIR . $class_path.'.php';
@@ -17,4 +17,4 @@ function loadByNamespace($name)
     }
     return false;
 }
-spl_autoload_register('loadByNamespace');
+spl_autoload_register('load_by_namespace');

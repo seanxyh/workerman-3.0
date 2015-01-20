@@ -1,5 +1,5 @@
 <?php
-namespace Workerman;
+namespace Workerman\Lib;
 use \Workerman\Events\EventInterface;
 
 /**
@@ -9,8 +9,8 @@ use \Workerman\Events\EventInterface;
  * <b>example:</b>
  * <pre>
  * <code>
- * Workerman\Timer::init();
- * Workerman\Timer::add($time_interval, callback, array($arg1, $arg2..));
+ * Workerman\Lib\Timer::init();
+ * Workerman\Lib\Timer::add($time_interval, callback, array($arg1, $arg2..));
  * <code>
  * </pre>
 * @author walkor <walkor@workerman.net>
@@ -36,11 +36,11 @@ class Timer
     {
         if($event)
         {
-            $event->add(SIGALRM, EventInterface::EV_SIGNAL, array('\Workerman\Timer', 'signalHandle'));
+            $event->add(SIGALRM, EventInterface::EV_SIGNAL, array('\Workerman\Lib\Timer', 'signalHandle'));
         }
         else 
         {
-            pcntl_signal(SIGALRM, array('\Workerman\Timer', 'signalHandle'), false);
+            pcntl_signal(SIGALRM, array('\Workerman\Lib\Timer', 'signalHandle'), false);
         }
     }
     

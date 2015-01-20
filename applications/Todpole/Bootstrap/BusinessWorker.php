@@ -1,14 +1,14 @@
 <?php
-use Workerman\Worker;
-use Workerman\Connection\AsyncTcpConnection;
-use Workerman\Timer;
-use Workerman\Lock;
+namespace Bootstrap;
+
+use \Workerman\Worker;
+use \Workerman\Connection\AsyncTcpConnection;
+use \Workerman\Lib\Timer;
+use \Lib\Lock;
 use \Lib\Store;
 use \Protocols\GatewayProtocol;
 use \Lib\Context;
 use \Lib\Gateway;
-
-require_once __DIR__ . '/../Lib/Autoloader.php';
 
 class BusinessWorker extends Worker
 {
