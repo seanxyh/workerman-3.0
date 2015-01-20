@@ -196,18 +196,17 @@ class TcpConnection extends ConnectionInterface
         }
         else
         {
-            $this->_sendBuffer .= $send_buffer;
-        }
-        // check send buffer size
-        if(self::$maxSendBufferSize <= strlen($this->_sendBuffer))
-        {
-            self::$statistics['send_fail']++;
-            if($this->onError)
+            // check send buffer size
+            if(self::$maxSendBufferSize <= strlen($this->_sendBuffer) + strlen($send_buffer))
             {
-                call_user_func($this->onError, $this, WORKERMAN_SEND_FAIL, 'package size too big');
+                self::$statistics['send_fail']++;
+                if($this->onError)
+                {
+                    call_user_func($this->onError, $this, WORKERMAN_SEND_FAIL, 'send buffer full');
+                }
+                return false;
             }
-            $this->destroy();
-            return false;
+            $this->_sendBuffer .= $send_buffer;
         }
     }
     
@@ -290,7 +289,7 @@ class TcpConnection extends ConnectionInterface
                            // bad package
                            else
                            {
-                               $this->close('error package. package_length=' . var_export($this->_currentPackageLength, true));
+                               $this->close('error package. package_length='.var_export($this->_currentPackageLength, true));
                            }
                        }
                    }

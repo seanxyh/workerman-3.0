@@ -4,7 +4,7 @@ require_once __DIR__ . '/Bootstrap/BusinessWorker.php';
 require_once __DIR__ . '/Bootstrap/WebServer.php';
 
 // gateway
-$gateway = new Gateway("Websocket://0.0.0.0:8484");
+$gateway = new Gateway("Websocket://0.0.0.0:8585");
 
 $gateway->name = 'TodpoleGateway';
 
@@ -28,7 +28,7 @@ $worker->count = 4;
 
 
 // WebServer
-$web = new WebServer("http://0.0.0.0:8585");
+$web = new WebServer("http://0.0.0.0:8686");
 
 $web->user = 'www-data';
 
