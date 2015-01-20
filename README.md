@@ -1,31 +1,38 @@
 ## workerman 3.0 
 create test.php
 ```php
-require_once './Workerman/Worker.php';
+require_once './Workerman/Autoloader.php';
 use Workerman\Worker;
 
 // create socket and listen 1234 port
-$hello_worker = new Worker("tcp://0.0.0.0:1234");
+$tcp_worker = new Worker("tcp://0.0.0.0:1234");
 
 // 4 hello_worker processes
-$hello_worker->count = 4;
+$tcp_worker->count = 4;
 
 // when client send data to 1234 port
-$hello_worker->onMessage = function($connection, $data)
+$tcp_worker->onMessage = function($connection, $data)
 {
     // send data to client
     $connection->send("hello $data \n");
 };
 
-// another worker
-$hi_worker = new Worker("tcp://0.0.0.0:5678");
-$hi_worker->count = 4;
-$hi_worker->onMessage = function($connection, $data)
+// another http worker
+$http_worker = new Worker("http://0.0.0.0:5678");
+$http_worker->count = 4;
+$http_worker->onMessage = function($connection, $data)
 {
     // send data to client
-    $connection->send("hi $data \n");
+    $connection->send("hello world \n");
 };
 
+// websocket worker
+$ws_worker = new Worker("websocket:://0.0.0.0:7890");
+$ws_worker->onMessage =  function($connection, $data)
+{
+    // send data to client
+    $connection->send("hello world \n");
+};
 
 // run all workers
 Worker::runAll();
