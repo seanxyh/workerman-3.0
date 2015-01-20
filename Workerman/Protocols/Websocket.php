@@ -96,7 +96,7 @@ class Websocket implements \Workerman\Protocols\ProtocolInterface
      * 打包
      * @param string $buffer
      */
-    public static function encode($buffer)
+    public static function encode($buffer, ConnectionInterface $connection)
     {
         $len = strlen($buffer);
         if($len<=125)
@@ -118,7 +118,7 @@ class Websocket implements \Workerman\Protocols\ProtocolInterface
      * @param string $buffer
      * @return string
      */
-    public static function decode($buffer)
+    public static function decode($buffer, ConnectionInterface $connection)
     {
         $len = $masks = $data = $decoded = null;
         $len = ord($buffer[1]) & 127;
