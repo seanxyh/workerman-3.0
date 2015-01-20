@@ -18,7 +18,7 @@ require_once __DIR__ . '/Events/EventInterface.php';
 require_once __DIR__ . '/Events/Select.php';
 require_once __DIR__ . '/Events/Libevent.php';
 require_once __DIR__ . '/Protocols/ProtocolInterface.php';
-require_once __DIR__ . '/Webserver.php';
+require_once __DIR__ . '/WebServer.php';
 
 
 use Workerman\Events\Libevent;
