@@ -1,5 +1,7 @@
 <?php
-use Workerman\Worker;
+namespace Workerman;
+
+use \Workerman\Worker;
 use \Workerman\Protocols\Http\Http;
 use \Workerman\Protocols\Http\HttpCache;
 
