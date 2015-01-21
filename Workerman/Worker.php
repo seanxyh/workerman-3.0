@@ -283,7 +283,7 @@ class Worker
         {
             $backtrace = debug_backtrace();
             self::$_startFile = $backtrace[count($backtrace)-1]['file'];
-            self::$pidFile = sys_get_temp_dir()."/workerman.".fileinode(self::$_startFile).".pid";
+            self::$pidFile = sys_get_temp_dir()."/workerman.".str_replace('/' . '_', self::$_startFile).".pid";
         }
         if(empty(self::$logFile))
         {
