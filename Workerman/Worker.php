@@ -377,6 +377,8 @@ class Worker
         
         $command = trim($argv[1]);
         
+        $command2 = isset($argv[2]) ? $argv[2] : '';
+        
         self::log("Workerman[$start_file] $command");
         
         // check if master process is running
@@ -398,6 +400,10 @@ class Worker
         {
             // start workerman
             case 'start':
+                if($command2 == '-d')
+                {
+                    Worker::$daemonize = true;
+                }
                 break;
             // show status of workerman
             case 'status':
@@ -444,6 +450,10 @@ class Worker
                     if($command === 'stop')
                     {
                         exit(0);
+                    }
+                    if($command2 == '-d')
+                    {
+                        Worker::$daemonize = true;
                     }
                     break;
                 }
