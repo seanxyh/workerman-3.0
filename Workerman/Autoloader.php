@@ -4,7 +4,7 @@ if(!defined('WORKERMAN_ROOT_DIR'))
     define('WORKERMAN_ROOT_DIR', realpath(__DIR__  . '/../'));
 }
 
-require_once WORKERMAN_ROOT_DIR.'/Lib/Constants.php';
+require_once WORKERMAN_ROOT_DIR.'/Workerman/Lib/Constants.php';
 
 function workerman_loader($name)
 {
