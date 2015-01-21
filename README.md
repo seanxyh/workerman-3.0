@@ -6,10 +6,8 @@ use Workerman\Worker;
 
 // create socket and listen 1234 port
 $tcp_worker = new Worker("tcp://0.0.0.0:1234");
-
-// 4 hello_worker processes
+//create 4 hello_worker processes
 $tcp_worker->count = 4;
-
 // when client send data to 1234 port
 $tcp_worker->onMessage = function($connection, $data)
 {
@@ -18,7 +16,7 @@ $tcp_worker->onMessage = function($connection, $data)
 };
 
 // another http worker
-$http_worker = new Worker("http://0.0.0.0:5678");
+$http_worker = new Worker("http://0.0.0.0:2345");
 $http_worker->count = 4;
 $http_worker->onMessage = function($connection, $data)
 {
@@ -27,7 +25,7 @@ $http_worker->onMessage = function($connection, $data)
 };
 
 // websocket worker
-$ws_worker = new Worker("websocket:://0.0.0.0:7890");
+$ws_worker = new Worker("websocket://0.0.0.0:5678");
 $ws_worker->onMessage =  function($connection, $data)
 {
     // send data to client
