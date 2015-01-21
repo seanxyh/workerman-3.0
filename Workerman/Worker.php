@@ -1,12 +1,6 @@
 <?php
 namespace Workerman;
 
-if(!ini_get('date.timezone') )
-{
-    date_default_timezone_set('Asia/Shanghai');
-}
-ini_set('display_errors', 'on');
-
 use \Workerman\Events\Libevent;
 use \Workerman\Events\Select;
 use \Workerman\Events\EventInterface;
