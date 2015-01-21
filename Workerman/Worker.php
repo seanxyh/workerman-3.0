@@ -426,14 +426,14 @@ class Worker
             case 'stop':
                 self::log("Workerman[$start_file] is stoping ...");
                 // send SIGINT to master process, master process will stop all children process and exit
-                posix_kill($master_pid, SIGINT);
+                $master_pid && posix_kill($master_pid, SIGINT);
                 // if $timeout seconds master process not exit then dispaly stop failure
                 $timeout = 5;
                 // a recording start time
                 $start_time = time();
                 while(1)
                 {
-                    $master_is_alive = posix_kill($master_pid, 0);
+                    $master_is_alive = $master_pid && posix_kill($master_pid, 0);
                     if($master_is_alive)
                     {
                         // check whether has timed out
