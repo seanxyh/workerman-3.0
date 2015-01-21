@@ -960,26 +960,13 @@ class Worker
         if($scheme != 'tcp' && $scheme != 'udp')
         {
             $scheme = ucfirst($scheme);
-            $this->_protocol = '\\Protocols\\'.$scheme;;
+            $this->_protocol = '\\Protocols\\'.$scheme;
             if(!class_exists($this->_protocol))
             {
-                $this->_protocol = '\\Protocols\\'.$scheme . '\\' . $scheme;
+                $this->_protocol = "\\Workerman\\Protocols\\$scheme";
                 if(!class_exists($this->_protocol))
                 {
-                    if(is_file(__DIR__."/Protocols/$scheme.php"))
-                    {
-                        require_once __DIR__."/Protocols/$scheme.php";
-                        $this->_protocol = "\\Workerman\\Protocols\\$scheme";
-                    }
-                    elseif(is_file(__DIR__."/Protocols/$scheme/$scheme.php"))
-                    {
-                        require_once __DIR__."/Protocols/$scheme/$scheme.php";
-                        $this->_protocol = "\\Workerman\\Protocols\\$scheme\\$scheme";
-                    }
-                    else 
-                    {
-                        throw new Exception('class ' .$this->_protocol . ' not exist');
-                    }
+                    throw new Exception("class \\Protocols\\$scheme not exist");
                 }
             }
         }

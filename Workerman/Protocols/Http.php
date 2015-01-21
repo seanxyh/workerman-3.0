@@ -1,5 +1,5 @@
 <?php 
-namespace  Workerman\Protocols\Http;
+namespace  Workerman\Protocols;
 
 use Workerman\Connection\ConnectionInterface;
 
@@ -365,7 +365,7 @@ class Http implements \Workerman\Protocols\ProtocolInterface
      */
     public static function getMimeTypesFile()
     {
-        return __DIR__.'/mime.types';
+        return __DIR__.'/Http/mime.types';
     }
 }
 

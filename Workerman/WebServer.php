@@ -2,8 +2,8 @@
 namespace Workerman;
 
 use \Workerman\Worker;
-use \Workerman\Protocols\Http\Http;
-use \Workerman\Protocols\Http\HttpCache;
+use \Workerman\Protocols\Http;
+use \Workerman\Protocols\HttpCache;
 
 /**
  * 
