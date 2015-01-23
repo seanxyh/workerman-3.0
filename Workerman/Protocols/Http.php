@@ -136,7 +136,7 @@ class Http implements \Workerman\Protocols\ProtocolInterface
                     $_SERVER['HTTP_CONNECTION'] = $value;
                     if(strtolower($value) === 'keep-alive')
                     {
-                        HttpCache::$header['Connection'] = 'Keep-Alive';
+                        HttpCache::$header['Connection'] = 'Connection: Keep-Alive';
                     }
                     break;
                 case 'referer':
