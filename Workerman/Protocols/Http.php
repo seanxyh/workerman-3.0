@@ -105,7 +105,7 @@ class Http implements \Workerman\Protocols\ProtocolInterface
                     $_SERVER['SERVER_NAME'] = $tmp[0];
                     if(isset($tmp[1]))
                     {
-                        $_SERVER['SERVER_PORT'] = $tmp[1];
+                        $_SERVER['SERVER_PORT'] = (int)$tmp[1];
                     }
                     break;
                 // cookie
