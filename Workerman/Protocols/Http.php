@@ -134,7 +134,7 @@ class Http implements \Workerman\Protocols\ProtocolInterface
                 // connection
                 case 'connection':
                     $_SERVER['HTTP_CONNECTION'] = $value;
-                    if($value === 'keep-alive')
+                    if(strtolower($value) === 'keep-alive')
                     {
                         HttpCache::$header['Connection'] = 'Keep-Alive';
                     }
@@ -206,8 +206,6 @@ class Http implements \Workerman\Protocols\ProtocolInterface
          
         // header
         $header .= "Server: WorkerMan/3.0\r\nContent-Length: ".strlen($content)."\r\n\r\n";
-        
-        HttpCache::$header = array();
         
         // save session
         self::sessionWriteClose();
