@@ -159,6 +159,10 @@ class Http implements \Workerman\Protocols\ProtocolInterface
         
         // REQUEST
         $_REQUEST = array_merge($_GET, $_POST);
+        
+        // REMOTE_ADDR REMOTE_PORT
+        $_SERVER['REMOTE_ADDR'] = $connection->getRemoteIp();
+        $_SERVER['REMOTE_PORT'] = $connection->getRemotePort();
     }
     
     public static function encode($content, ConnectionInterface $connection)
