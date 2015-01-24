@@ -193,6 +193,12 @@ class Worker
     protected $_context = null;
     
     /**
+     * enable ssl or not
+     * @var bool
+     */
+    protected $_enableSSL = false;
+    
+    /**
      * all instances of worker
      * @var array
      */
@@ -980,12 +986,24 @@ class Worker
         }
         
         $flags =  $this->transport === 'udp' ? STREAM_SERVER_BIND : STREAM_SERVER_BIND | STREAM_SERVER_LISTEN;
-        
-        $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg, $flags, $this->_context);
+        if($this->_enableSSL)
+        {
+            if($this->transport == 'udp')
+            {
+                throw new Exception('udp do not support ssl');
+            }
+            $this->_mainSocket = stream_socket_server("ssl:".$address, $errno, $errmsg, $flags, $this->_context);
+            @stream_socket_enable_crypto($this->_mainSocket, false);
+        }
+        else 
+        {
+            $this->_mainSocket = stream_socket_server($this->transport.":".$address, $errno, $errmsg, $flags, $this->_context);
+        }
         if(!$this->_mainSocket)
         {
             throw new Exception($errmsg);
         }
+        
         stream_set_blocking($this->_mainSocket, 0);
         
         if(self::$_globalEvent)
@@ -1008,6 +1026,21 @@ class Worker
     public function getSocketName()
     {
         return $this->_socketName ? $this->_socketName : 'none';
+    }
+    
+    /**
+     * enable SSL
+     * @param array $option @see http://php.net/manual/zh/context.ssl.php
+     * example $option = array('local_cert' => '/your/path/file.pem', 'passphrase' => 'password', 'allow_self_signed' => true, 'verify_peer' => false)
+     * @return void
+     */
+    public function enableSSL(array $option)
+    {
+        $this->_enableSSL = true;
+        foreach($option as $key => $value)
+        {
+            stream_context_set_option($this->_context, 'ssl', $key, $value);
+        }
     }
     
     /**
@@ -1073,6 +1106,14 @@ class Worker
         if(false === $new_socket)
         {
             return;
+        }
+        if($this->_enableSSL)
+        {
+            // block the connection until SSL is done
+            stream_set_blocking ($socket, true); 
+            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_SSLv3_SERVER);
+            //unblock connection
+            stream_set_blocking ($socket, false);
         }
         $connection = new TcpConnection($new_socket, self::$_globalEvent);
         $connection->protocol = $this->_protocol;
