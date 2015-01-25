@@ -7,12 +7,7 @@
  * 
  */
 
-use \Lib\Context;
-use \Lib\Gateway;
-use \Lib\StatisticClient;
-use \Lib\Store;
-use \Protocols\GatewayProtocol;
-use \Protocols\WebSocket;
+use \GatewayWorker\Lib\Gateway;
 
 class Event
 {
