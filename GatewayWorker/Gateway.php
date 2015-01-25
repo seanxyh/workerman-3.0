@@ -148,7 +148,7 @@ class Gateway extends Worker
     public function onStart()
     {
         $backrace = debug_backtrace();
-        $root_path = realpath($backrace[1]['file']);
+        $root_path = dirname($backrace[1]['file']);
         Autoloader::setRootPath($root_path);
         
         $this->lanPort = $this->startPort - posix_getppid() + posix_getpid();

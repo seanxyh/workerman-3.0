@@ -28,7 +28,7 @@ class BusinessWorker extends Worker
     protected function onStart()
     {
         $backrace = debug_backtrace();
-        $root_path = realpath($backrace[1]['file']);
+        $root_path = dirname($backrace[1]['file']);
         Autoloader::setRootPath($root_path);
         Timer::add(1, array($this, 'checkGatewayConnections'));
         $this->checkGatewayConnections();
