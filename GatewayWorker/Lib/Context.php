@@ -1,5 +1,5 @@
 <?php
-namespace Lib;
+namespace GatewayWorker\Lib;
 /**
  * 上下文 包含当前用户uid， 内部通信local_ip local_port socket_id ，以及客户端client_ip client_port
  * @author walkor

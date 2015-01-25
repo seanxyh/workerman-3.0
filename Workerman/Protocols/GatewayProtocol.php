@@ -1,5 +1,5 @@
 <?php 
-namespace Protocols;
+namespace Workerman\Protocols;
 /**
  * Gateway与Worker间通讯的二进制协议
  * 

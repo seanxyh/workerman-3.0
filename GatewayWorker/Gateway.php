@@ -1,11 +1,12 @@
 <?php 
-namespace Bootstrap;
+namespace GatewayWorker;
 
 use \Workerman\Worker;
 use \Workerman\Lib\Timer;
-use \Lib\Lock;
-use \Lib\Store;
-use \Protocols\GatewayProtocol;
+use \Workerman\Protocols\GatewayProtocol;
+use \GatewayWorker\Lib\Lock;
+use \GatewayWorker\Lib\Store;
+use \GatewayWorker\Lib\AutoLoader;
 
 class Gateway extends Worker
 {
@@ -70,7 +71,8 @@ class Gateway extends Worker
         $gateway_data['cmd'] = $cmd;
         $gateway_data['body'] = $body;
         $gateway_data['ext_data'] = $connection->session;
-        if($key = array_rand($this->_workerConnections))
+        $key = array_rand($this->_workerConnections);
+        if($key)
         {
             if(false === $this->_workerConnections[$key]->send($gateway_data))
             {
@@ -174,6 +176,10 @@ class Gateway extends Worker
             $this->log('registerAddress fail and exit');
             Worker::stopAll();
         }
+        
+        $backrace = debug_backtrace();
+        $root_path = realpath($backrace[1]['file']);
+        AutoLoader::setRootPath($root_path);
     }
     
     public function onWorkerConnect($connection)

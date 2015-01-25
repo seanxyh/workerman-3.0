@@ -1,5 +1,5 @@
 <?php
-namespace Lib;
+namespace GatewayWorker\Lib;
 
 /**
  * 数据库连接类，依赖mysql_pdo扩展

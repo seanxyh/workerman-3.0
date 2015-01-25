@@ -62,7 +62,7 @@ class WebServer extends Worker
     {
         if(empty($this->serverRoot))
         {
-            throw new Exception('server root not set, please use WebServer::addRoot($domain, $root_path) to set server root path');
+            throw new \Exception('server root not set, please use WebServer::addRoot($domain, $root_path) to set server root path');
         }
         // 初始化HttpCache
         HttpCache::init();

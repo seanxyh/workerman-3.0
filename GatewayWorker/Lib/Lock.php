@@ -1,5 +1,5 @@
 <?php
-namespace Lib;
+namespace GatewayWorker\Lib;
 /**
  * lock
  */

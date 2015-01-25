@@ -733,6 +733,7 @@ class Worker
             // calls signal handlers for pending signals
             pcntl_signal_dispatch();
             // suspends execution of the current process until a child has exited or  a signal is delivered
+            $status = 0;
             $pid = pcntl_wait($status, WUNTRACED);
             if($pid > 0)
             {

@@ -1,9 +1,8 @@
 <?php 
 use \Workerman\WebServer;
-use \Bootstrap\Gateway;
-use \Bootstrap\BusinessWorker;
+use \GatewayWorker\Gateway;
+use \GatewayWorker\BusinessWorker;
 
-require_once __DIR__ . '/../../Workerman/Autoloader.php';
 require_once __DIR__ . '/Lib/Autoloader.php';
 
 // gateway

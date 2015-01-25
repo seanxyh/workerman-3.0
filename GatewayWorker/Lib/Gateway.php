@@ -1,5 +1,5 @@
 <?php
-namespace Lib;
+namespace GatewayWorker\Lib;
 /**
  * 
  * 数据发送相关
@@ -7,9 +7,9 @@ namespace Lib;
  * 
  */
 require_once __DIR__ . '/Autoloader.php';
-use \Protocols\GatewayProtocol;
-use \Lib\Store;
-use \Lib\Context;
+use \Workerman\Protocols\GatewayProtocol;
+use \GatewayWorker\Lib\Store;
+use \GatewayWorker\Lib\Context;
 
 class Gateway
 {
@@ -131,7 +131,8 @@ class Gateway
                foreach($read as $client)
                {
                    // udp
-                   if($data = json_decode(fread($client, 655350), true))
+                   $data = json_decode(fread($client, 65535), true);
+                   if($data)
                    {
                        $status_data = array_merge($status_data, $data);
                    }

@@ -1,5 +1,5 @@
 <?php
-namespace Lib;
+namespace GatewayWorker\Lib;
 /**
  * 存储类
  * 这里用memcache实现

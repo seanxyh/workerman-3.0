@@ -1,13 +1,14 @@
 <?php
-namespace Bootstrap;
+namespace GatewayWorker;
 
 use \Workerman\Worker;
 use \Workerman\Connection\AsyncTcpConnection;
+use \Workerman\Protocols\GatewayProtocol;
 use \Workerman\Lib\Timer;
-use \Lib\Lock;
-use \Lib\Store;
-use \Protocols\GatewayProtocol;
-use \Lib\Context;
+use \GatewayWorker\Lib\Lock;
+use \GatewayWorker\Lib\Store;
+use \GatewayWorker\Lib\Context;
+use \GatewayWorker\Lib\AutoLoader;
 use \Event;
 
 class BusinessWorker extends Worker
@@ -28,7 +29,10 @@ class BusinessWorker extends Worker
     {
         Timer::add(1, array($this, 'checkGatewayConnections'));
         $this->checkGatewayConnections();
-        \Lib\Gateway::setBusinessWorker($this);
+        \GatewayWorker\Lib\Gateway::setBusinessWorker($this);
+        $backrace = debug_backtrace();
+        $root_path = realpath($backrace[1]['file']);
+        AutoLoader::setRootPath($root_path);
     }
     
     public function onGatewayMessage($connection, $data)
@@ -80,7 +84,7 @@ class BusinessWorker extends Worker
         $session_str_now = $_SESSION !== null ? Context::sessionEncode($_SESSION) : '';
         if($session_str_copy != $session_str_now)
         {
-            \Lib\Gateway::updateSocketSession(Context::$client_id, $session_str_now);
+            \GatewayWorker\Lib\Gateway::updateSocketSession(Context::$client_id, $session_str_now);
         }
     
         Context::clear();

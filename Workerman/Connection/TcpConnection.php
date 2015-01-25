@@ -218,7 +218,8 @@ class TcpConnection extends ConnectionInterface
     {
         if(!$this->_remoteIp)
         {
-            if($this->_remoteAddress = stream_socket_get_name($this->_socket, true))
+            $this->_remoteAddress = stream_socket_get_name($this->_socket, true);
+            if($this->_remoteAddress)
             {
                 list($this->_remoteIp, $this->_remotePort) = explode(':', $this->_remoteAddress, 2);
                 $this->_remotePort = (int)$this->_remotePort;
@@ -234,7 +235,8 @@ class TcpConnection extends ConnectionInterface
     {
         if(!$this->_remotePort)
         {
-            if($this->_remoteAddress = stream_socket_get_name($this->_socket, true))
+            $this->_remoteAddress = stream_socket_get_name($this->_socket, true);
+            if($this->_remoteAddress)
             {
                 list($this->_remoteIp, $this->_remotePort) = explode(':', $this->_remoteAddress, 2);
                 $this->_remotePort = (int)$this->_remotePort;

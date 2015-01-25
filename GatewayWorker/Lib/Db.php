@@ -1,5 +1,5 @@
 <?php
-namespace Lib;
+namespace GatewayWorker\Lib;
 /**
  * 数据库类
  * @author walkor <walkor@workerman.net>
@@ -28,7 +28,7 @@ class Db
         if(empty(self::$instance[$config_name]))
         {
             $config = \Config\Db::$$config_name;
-            self::$instance[$config_name] = new \Lib\DbConnection($config['host'], $config['port'], $config['user'], $config['password'], $config['dbname']);
+            self::$instance[$config_name] = new \GatewayWorker\Lib\DbConnection($config['host'], $config['port'], $config['user'], $config['password'], $config['dbname']);
         }
         return self::$instance[$config_name];
     }
