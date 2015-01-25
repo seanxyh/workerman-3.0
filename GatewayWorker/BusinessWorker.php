@@ -19,17 +19,19 @@ class BusinessWorker extends Worker
     
     public $badGatewayAddress = array();
     
+    protected $_rootPath = '';
+    
     public function __construct($socket_name = '', $context_option = array())
     {
         $this->onStart = array($this, 'onStart');
+        $backrace = debug_backtrace();
+        $this->_rootPath = dirname($backrace[1]['file']);
         parent::__construct($socket_name, $context_option);
     }
     
     protected function onStart()
     {
-        $backrace = debug_backtrace();
-        $root_path = dirname($backrace[1]['file']);
-        Autoloader::setRootPath($root_path);
+        Autoloader::setRootPath($this->_rootPath);
         Timer::add(1, array($this, 'checkGatewayConnections'));
         $this->checkGatewayConnections();
         \GatewayWorker\Lib\Gateway::setBusinessWorker($this);

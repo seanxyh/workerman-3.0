@@ -28,6 +28,8 @@ class Gateway extends Worker
     
     protected $_innerUdpWorker = null;
     
+    protected $_rootPath = '';
+    
     public function __construct($socket_name, $context_option = array())
     {
         $this->onStart = array($this, 'onStart');
@@ -35,6 +37,8 @@ class Gateway extends Worker
         $this->onMessage = array($this, 'onClientMessage');
         $this->onClose = array($this, 'onClientClose');
         $this->onStop = array($this, 'onStop');
+        $backrace = debug_backtrace();
+        $this->_rootPath = dirname($backrace[1]['file']);
         parent::__construct($socket_name, $context_option);
     }
     
@@ -147,9 +151,7 @@ class Gateway extends Worker
     
     public function onStart()
     {
-        $backrace = debug_backtrace();
-        $root_path = dirname($backrace[1]['file']);
-        Autoloader::setRootPath($root_path);
+        Autoloader::setRootPath($this->_rootPath);
         
         $this->lanPort = $this->startPort - posix_getppid() + posix_getpid();
     

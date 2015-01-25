@@ -14,7 +14,7 @@ class Autoloader
     public static function loadByNamespace($name)
     {
         $class_path = str_replace('\\', DIRECTORY_SEPARATOR ,$name);
-        $class_file = self::$_rootPath . $class_path.'.php';
+        $class_file = self::$_rootPath . '/' . $class_path.'.php';
         if(is_file($class_file))
         {
             require_once($class_file);
