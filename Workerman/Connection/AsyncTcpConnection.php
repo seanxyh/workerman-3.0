@@ -128,7 +128,7 @@ class AsyncTcpConnection extends TcpConnection
         
         if($this->_sendBuffer === '')
         {
-            $len = fwrite($this->_socket, $send_buffer);
+            $len = @fwrite($this->_socket, $send_buffer);
             if($len === strlen($send_buffer))
             {
                 return true;

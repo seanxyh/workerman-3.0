@@ -166,7 +166,7 @@ class TcpConnection extends ConnectionInterface
         
         if($this->_sendBuffer === '')
         {
-            $len = fwrite($this->_socket, $send_buffer);
+            $len = @fwrite($this->_socket, $send_buffer);
             if($len === strlen($send_buffer))
             {
                 return true;
@@ -346,7 +346,7 @@ class TcpConnection extends ConnectionInterface
      */
     public function baseWrite()
     {
-        $len = fwrite($this->_socket, $this->_sendBuffer);
+        $len = @fwrite($this->_socket, $this->_sendBuffer);
         if($len === strlen($this->_sendBuffer))
         {
             $this->_event->del($this->_socket, EventInterface::EV_WRITE);
