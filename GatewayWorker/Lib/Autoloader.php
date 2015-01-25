@@ -8,7 +8,7 @@ class AutoLoader
     public static function setRootPath($root_path)
     {
         self::$_rootPath = $root_path;
-        spl_autoload_register('loadByNamespace');
+        spl_autoload_register('GatewayWorker\Lib\AutoLoader::loadByNamespace');
     }
     
     public static function loadByNamespace($name)

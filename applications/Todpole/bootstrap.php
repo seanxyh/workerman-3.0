@@ -3,7 +3,7 @@ use \Workerman\WebServer;
 use \GatewayWorker\Gateway;
 use \GatewayWorker\BusinessWorker;
 
-require_once __DIR__ . '/Lib/Autoloader.php';
+require_once __DIR__ . '/../../Workerman/Autoloader.php';
 
 // gateway
 $gateway = new Gateway("Websocket://0.0.0.0:8585");
