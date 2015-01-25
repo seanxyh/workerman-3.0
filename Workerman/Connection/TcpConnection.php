@@ -281,18 +281,23 @@ class TcpConnection extends ConnectionInterface
                    {
                        // try to get the current package length
                        $this->_currentPackageLength = $parser::input($this->_recvBuffer, $this);
-                       if($this->_currentPackageLength > strlen($this->_recvBuffer))
+                       // need more buffer
+                       if($this->_currentPackageLength === 0)
                        {
-                           // we need more buffer
-                           if($this->_currentPackageLength === 0 || $this->_currentPackageLength <= self::$maxPackageSize)
+                           break;
+                       }
+                       elseif($this->_currentPackageLength > 0 && $this->_currentPackageLength <= self::$maxPackageSize)
+                       {
+                           // need more buffer
+                           if($this->_currentPackageLength > strlen($this->_recvBuffer))
                            {
                                break;
                            }
-                           // bad package
-                           else
-                           {
-                               $this->close('error package. package_length='.var_export($this->_currentPackageLength, true));
-                           }
+                       }
+                       // error package
+                       else
+                       {
+                           $this->close('error package. package_length='.var_export($this->_currentPackageLength, true));
                        }
                    }
                    
