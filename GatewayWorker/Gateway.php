@@ -6,7 +6,7 @@ use \Workerman\Lib\Timer;
 use \Workerman\Protocols\GatewayProtocol;
 use \GatewayWorker\Lib\Lock;
 use \GatewayWorker\Lib\Store;
-use \GatewayWorker\Lib\AutoLoader;
+use \GatewayWorker\Lib\Autoloader;
 
 class Gateway extends Worker
 {
@@ -149,7 +149,7 @@ class Gateway extends Worker
     {
         $backrace = debug_backtrace();
         $root_path = realpath($backrace[1]['file']);
-        AutoLoader::setRootPath($root_path);
+        Autoloader::setRootPath($root_path);
         
         $this->lanPort = $this->startPort - posix_getppid() + posix_getpid();
     

@@ -8,7 +8,7 @@ use \Workerman\Lib\Timer;
 use \GatewayWorker\Lib\Lock;
 use \GatewayWorker\Lib\Store;
 use \GatewayWorker\Lib\Context;
-use \GatewayWorker\Lib\AutoLoader;
+use \GatewayWorker\Lib\Autoloader;
 use \Event;
 
 class BusinessWorker extends Worker
@@ -29,7 +29,7 @@ class BusinessWorker extends Worker
     {
         $backrace = debug_backtrace();
         $root_path = realpath($backrace[1]['file']);
-        AutoLoader::setRootPath($root_path);
+        Autoloader::setRootPath($root_path);
         Timer::add(1, array($this, 'checkGatewayConnections'));
         $this->checkGatewayConnections();
         \GatewayWorker\Lib\Gateway::setBusinessWorker($this);

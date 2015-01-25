@@ -1,14 +1,14 @@
 <?php
 namespace GatewayWorker\Lib;
 
-class AutoLoader
+class Autoloader
 {
     protected static $_rootPath = '';
     
     public static function setRootPath($root_path)
     {
         self::$_rootPath = $root_path;
-        spl_autoload_register('\GatewayWorker\Lib\AutoLoader::loadByNamespace');
+        spl_autoload_register('\GatewayWorker\Lib\Autoloader::loadByNamespace');
     }
     
     public static function loadByNamespace($name)
