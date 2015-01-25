@@ -27,12 +27,12 @@ class BusinessWorker extends Worker
     
     protected function onStart()
     {
-        Timer::add(1, array($this, 'checkGatewayConnections'));
-        $this->checkGatewayConnections();
-        \GatewayWorker\Lib\Gateway::setBusinessWorker($this);
         $backrace = debug_backtrace();
         $root_path = realpath($backrace[1]['file']);
         AutoLoader::setRootPath($root_path);
+        Timer::add(1, array($this, 'checkGatewayConnections'));
+        $this->checkGatewayConnections();
+        \GatewayWorker\Lib\Gateway::setBusinessWorker($this);
     }
     
     public function onGatewayMessage($connection, $data)

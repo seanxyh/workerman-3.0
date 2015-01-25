@@ -147,6 +147,10 @@ class Gateway extends Worker
     
     public function onStart()
     {
+        $backrace = debug_backtrace();
+        $root_path = realpath($backrace[1]['file']);
+        AutoLoader::setRootPath($root_path);
+        
         $this->lanPort = $this->startPort - posix_getppid() + posix_getpid();
     
         if($this->lanPort<0 || $this->lanPort >=65535)
@@ -176,10 +180,6 @@ class Gateway extends Worker
             $this->log('registerAddress fail and exit');
             Worker::stopAll();
         }
-        
-        $backrace = debug_backtrace();
-        $root_path = realpath($backrace[1]['file']);
-        AutoLoader::setRootPath($root_path);
     }
     
     public function onWorkerConnect($connection)
