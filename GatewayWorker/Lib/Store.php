@@ -57,7 +57,7 @@ class Store
         {
             if(!isset(self::$instance[$config_name]))
             {
-                self::$instance[$config_name] = new \Lib\StoreDriver\File($config_name);
+                self::$instance[$config_name] = new \GatewayWorker\Lib\StoreDriver\File($config_name);
             }
             return self::$instance[$config_name];
         }

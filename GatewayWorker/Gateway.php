@@ -38,7 +38,7 @@ class Gateway extends Worker
         $this->onClose = array($this, 'onClientClose');
         $this->onStop = array($this, 'onStop');
         $backrace = debug_backtrace();
-        $this->_rootPath = dirname($backrace[1]['file']);
+        $this->_rootPath = dirname($backrace[0]['file']);
         parent::__construct($socket_name, $context_option);
     }
     
